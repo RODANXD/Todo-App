@@ -98,6 +98,18 @@ export default function KanbanBoard({ projectId, taskListId }) {
     }
   }
 
+  const handleTaskDelete = async(taskid)=>{
+    try{
+      await deleteTask(taskid);
+      console.log("Task deleted successfully");
+      alert("task deleted successfully")
+    }
+    catch(error){
+      console.log("Error deleting task:", error);
+      alert("Error deleting task")
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -160,7 +172,7 @@ export default function KanbanBoard({ projectId, taskListId }) {
 
             <div
               className={`space-y-2 min-h-[200px] p-1.5 rounded-md transition-colors ${
-                dragOverColumnId === column.id ? "bg-accent/20 outline outline-2 outline-dashed outline-accent/50" : ""
+                dragOverColumnId === column.id ? "bg-accent/20  outline-2 outline-dashed outline-accent/50" : ""
               }`}
               onDragOver={(e) => handleDragOver(e, column.id)}
               onDrop={(e) => handleDrop(e, column.id)}
@@ -173,6 +185,7 @@ export default function KanbanBoard({ projectId, taskListId }) {
                     key={task.id}
                     task={task}
                     onEdit={() => openEditTaskModal(task)}
+                    onDelete = {()=> handleTaskDelete(task.id)}
                     isDragging={draggedTask?.id === task.id}
                     onDragStart={() => handleDragStart(task)}
                     onDragEnd={handleDragEnd}

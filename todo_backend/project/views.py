@@ -5,8 +5,13 @@ from rest_framework.permissions import IsAuthenticated
 from django.shortcuts import get_object_or_404
 from django.db import models
 from .models import Project, TaskList, ProjectRole
+from rest_framework.views import APIView
 from .serializers import ProjectSerializer, TaskListSerializer, ProjectRoleSerializer
+from django.contrib.auth import get_user_model
 
+
+
+User = get_user_model()
 
 class ProjectListCreateView(generics.ListCreateAPIView):
     serializer_class = ProjectSerializer
@@ -86,6 +91,76 @@ class TaskListView(generics.ListCreateAPIView):
         serializer.save(project=project)
 
 
+
+class ProjectMembersView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, project_id):
+        """Get all members of a project"""
+        project = get_object_or_404(Project, id=project_id)
+        if not project.can_view(request.user):
+            return Response(
+                {"error": "You don't have permission to view project members"}, 
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        # Get all roles for the project
+        roles = ProjectRole.objects.filter(project=project).select_related('user')
+        members = []
+        
+        # Add owner
+        members.append({
+            'id': project.owner.id,
+            'email': project.owner.email,
+            'name': project.owner.get_full_name(),
+            'role': 'owner'
+        })
+        return Response(members)
+    
+    
+    def post(self, request, project_id):
+        """Add a new member to the project"""
+        project = get_object_or_404(Project, id=project_id)
+        if not project.can_edit(request.user):
+            return Response(
+                {"error": "You don't have permission to add members"}, 
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        email = request.data.get('email')
+        role = request.data.get('role', 'viewer')  # Default role is viewer
+
+        try:
+            user = User.objects.get(email=email)
+            # Check if user is already a member
+            if ProjectRole.objects.filter(project=project, user=user).exists():
+                return Response(
+                    {"error": "User is already a member of this project"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Add user with specified role
+            project.add_user(user, role)
+            
+            return Response({
+                "message": "Member added successfully",
+                "member": {
+                    "id": user.id,
+                    "email": user.email,
+                    "name": user.get_full_name(),
+                    "role": role
+                }
+            })
+        except User.DoesNotExist:
+            return Response(
+                {"error": "User not found"}, 
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+
+
+
+
 @api_view(['POST'])
 def add_collaborator(request, project_id):
     project = get_object_or_404(Project, id=project_id, owner=request.user)
@@ -99,3 +174,13 @@ def add_collaborator(request, project_id):
         return Response({'message': 'Collaborator added successfully'})
     except User.DoesNotExist:
         return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+    
+
+
+
+
+ 
+
+
+
+
