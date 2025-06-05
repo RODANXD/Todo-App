@@ -1,0 +1,4 @@
+Django
+gunicorn
+whitenoise  # For static files
+django-cors-headers  # If React needs API access
