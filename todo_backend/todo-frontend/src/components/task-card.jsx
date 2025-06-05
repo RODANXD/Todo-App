@@ -7,11 +7,8 @@ import { Button } from "../components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../components/ui/dropdown-menu"
 import { useKanban } from "./kanban-provider"
 import { formatDate } from "../lib/utils"
-import { deleteTask } from "../api/AxiosAuth"
 
-
-
-export default function TaskCard({ task, onEdit, isDragging = false, onDragStart, onDragEnd, onDelete }) {
+export default function TaskCard({ task, onEdit, isDragging = false, onDragStart, onDragEnd }) {
   const { deleteTask } = useKanban()
 
   const getPriorityColor = (priority) => {
@@ -26,20 +23,6 @@ export default function TaskCard({ task, onEdit, isDragging = false, onDragStart
         return "bg-slate-500 hover:bg-slate-600"
     }
   }
-
-  const handleDelete = async () =>{
-    if (window.confirm("Are you sure you want to delete this task?")) {
-      try{
-        await deleteTask(task.id);
-        deleteTask(task.id);
-        toast.success("Task deleted successfully");
-        window.location.reload();
-      } catch (error){
-        console.error("Error deleting task:", error);
-        toast.error("Error deleting task"+ error.message);
-      }
-  }
-}
 
   return (
     <Card
@@ -64,7 +47,7 @@ export default function TaskCard({ task, onEdit, isDragging = false, onDragStart
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem onClick={onEdit}>Edit</DropdownMenuItem>
-              <DropdownMenuItem onClick={handleDelete} className="text-red-600">
+              <DropdownMenuItem onClick={() => deleteTask(task.id)} className="text-red-600">
                 Delete
               </DropdownMenuItem>
             </DropdownMenuContent>

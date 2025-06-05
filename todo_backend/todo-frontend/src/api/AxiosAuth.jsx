@@ -71,62 +71,30 @@ export const deleteProject = (projectId) => axiosinstance.delete(`/project/${pro
 
 // TaskList APIs
 export const getTaskLists = (projectId) => axiosinstance.get(`/tasks/?tasklist=${projectId}`);
-export const validateTaskList = async (taskListId) => {
-  try {
-    // Update the endpoint to match your backend structure
-    const response = await axiosinstance.get(`/project/task-lists/${taskListId}/`);
-    return response.data;
-  } catch (error) {
-    console.error("Task list validation error:", error.response?.data || error.message);
-    throw new Error("Invalid task list");
-  }
-};
-export const createTaskWithList = async (data) => {
-  try {
-    // Skip validation if task_list is already validated
-    if (!data.task_list) {
-      throw new Error("Task list ID is required");
-    }
-
-    // Create the task directly
-    const response = await axiosinstance.post('/tasks/', {
-      ...data,
-      project: parseInt(data.project),
-      task_list: parseInt(data.task_list),
-      status: data.status || 'todo'
-    });
-
-    return response;
-  } catch (error) {
-    console.error("Create task error:", error.response?.data || error.message);
-    throw error;
-  }
+export const createTaskWithList = (data) => {
+  // Ensure project and task_list are numbers
+  const taskData = {
+    ...data,
+    project: parseInt(data.project),
+    task_list: parseInt(data.task_list)
+  };
+  
+  return axiosinstance.post('/tasks/', taskData);
 };
 export const getTasksByProject = (projectId) => axiosinstance.get(`/tasks/?project=${projectId}`);
-export const createTaskList = (data) => axiosinstance.post(`/project/${data.project}/task-lists/`, data);
+export const createTaskList = (projectId, data) => axiosinstance.post(`/project/${projectId}/task-lists/`, data);
 export const updateTaskList = (projectId, taskListId, data) => axiosinstance.put(`/project/${projectId}/task-lists/${taskListId}/`, data);
 export const deleteTaskList = (projectId, taskListId) => axiosinstance.delete(`/project/${projectId}/task-lists/${taskListId}/`);
 
 // Task APIs
 export const getTasks = (taskListId) => axiosinstance.get(`/tasks/?tasklist=${taskListId}`);
 export const createTask = (data) => axiosinstance.post('/tasks/', data);
-
-
-export const updateTask = (taskId, data) => {
-    const taskData = {
-        ...data,
-        project: parseInt(data.project),
-        task_list: parseInt(data.task_list)
-    };
-    return axiosinstance.put(`/tasks/${taskId}/`, taskData);
-}
-export const deleteTask = (taskId) =>  axiosinstance.delete(`/tasks/${taskId}/`);
+export const updateTask = (taskId, data) => axiosinstance.put(`/tasks/${taskId}/`, data);
+export const deleteTask = (taskId) => axiosinstance.delete(`/tasks/${taskId}/`);
 export const getTaskDetails = (taskId) => axiosinstance.get(`/tasks/${taskId}/`);
 export const updateTaskStatus = (taskId, status) => axiosinstance.patch(`/tasks/${taskId}/`, { status });
 
 
-export const getProjectMembers = (projectId) => 
-  axiosinstance.get(`/project/${projectId}/members/`);
 export const inviteTeamMember = async (projectId, data) => {
     return await axiosinstance.post(`/api/projects/${projectId}/invite/`, data);
 };

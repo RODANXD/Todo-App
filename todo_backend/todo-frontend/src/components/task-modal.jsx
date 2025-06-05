@@ -5,7 +5,6 @@ import { useKanban } from "./kanban-provider"
 import { Button } from "../components/ui/button"
 import { Input } from "../components/ui/input"
 import { Textarea } from "../components/ui/textarea"
-import { toast } from "react-hot-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select"
 import { Label } from "../components/ui/label"
@@ -14,9 +13,7 @@ import { Calendar } from "../components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "../components/ui/popover"
 import { format } from "date-fns"
 import { createTask, updateTask } from "../api/AxiosAuth" // Import API functions
-import { createTaskWithList, getProjectMembers } from "../api/AxiosAuth";
-
-// import { updateTask } from "../api/AxiosAuth"
+import { createTaskWithList } from "../api/AxiosAuth";
 
 export default function TaskModal({ isOpen, onClose, task, projectId, taskListId }) {
   const { state, addTask, updateTask: updateTaskInState } = useKanban()
@@ -26,7 +23,6 @@ export default function TaskModal({ isOpen, onClose, task, projectId, taskListId
   const [priority, setPriority] = useState("medium")
   const [dueDate, setDueDate] = useState(new Date())
   const [assignee, setAssignee] = useState("")
-  const [projectMembers, setProjectMembers] = useState([]);
 
 
   useEffect(() => {
@@ -49,21 +45,6 @@ export default function TaskModal({ isOpen, onClose, task, projectId, taskListId
     }
   }, [isOpen, task, state.columns])
 
-    useEffect(() => {
-    const fetchProjectMembers = async () => {
-      try {
-        const response = await getProjectMembers(projectId);
-        setProjectMembers(response.data);
-      } catch (error) {
-        console.error('Error fetching project members:', error);
-      }
-    };
-
-    if (isOpen && projectId) {
-      fetchProjectMembers();
-    }
-  }, [isOpen, projectId]);
-
   const handleSubmit = async () => {
   if (!title.trim()){
      alert("Title is required");
@@ -77,13 +58,13 @@ export default function TaskModal({ isOpen, onClose, task, projectId, taskListId
 
   const taskData = {
 
-    title: title,
+      title: title,
     description: description,
     status: status || "todo",
     priority: priority || "medium",
     due_date: dueDate?.toISOString(),
-    project: parseInt(projectId), 
-    task_list: parseInt(taskListId), 
+    project: parseInt(projectId), // Ensure it's a number
+    task_list: parseInt(taskListId), // Ensure it's a number
     assigned_to: assignee || null
     // title,
     // description,
@@ -105,14 +86,8 @@ export default function TaskModal({ isOpen, onClose, task, projectId, taskListId
   
   try {
     if (task) {
-      console.log("task.id: ", task.id)
-      const updateResponse = await updateTask(task.id, taskData);
-      
-      // updateTaskInState({ ...taskData, id: task.id })
-      // console.log("Task updated:", updateResponse.data)
-      toast.success("Task updated successfully");
-      alert("task updated successfully")
-      window.location.reload();
+      const updateResponse = await updateTask(task.id, taskData)
+      updateTaskInState({ ...taskData, id: task.id })
     } else {
       const response = await createTaskWithList(taskData)
       // addTask({ 
@@ -123,26 +98,14 @@ export default function TaskModal({ isOpen, onClose, task, projectId, taskListId
       //   project: projectId,
       //   task_list: taskListId
       // })
-       if (response.data) {
-        addTask(response.data);
-        toast.success("Task created successfully");
-        window.location.reload();
-      }
       
       alert("Task created sucessfully")
       window.location.reload()
     }
     onClose()
   } catch (error) {
-    if (error.response?.data?.task_list) {
-      // Handle invalid task list error
-      alert("Invalid task list. Please refresh the page and try again.");
-      console.error("Task list error:", error.response.data);
-    } else {
-      console.error("Error saving task:", error);
-      alert("Error " + (task ? "updating" : "creating") + " task: " + 
-        (error.response?.data?.detail || error.message));
-    }
+    console.error("Error saving task:", error?.response?.data || error);
+    alert("Error creating task: " + (error?.response?.data?.detail || error.message));
   }
 }
   return (
@@ -213,19 +176,12 @@ export default function TaskModal({ isOpen, onClose, task, projectId, taskListId
             </div>
             <div className="grid gap-2">
               <Label htmlFor="assignee">Assignee</Label>
-              <Select value={assignee} onValueChange={setAssignee}>
-            <SelectTrigger id="assignee">
-              <SelectValue placeholder="Select team member" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="">Unassigned</SelectItem>
-              {projectMembers.map((member) => (
-                <SelectItem key={member.id} value={member.id.toString()}>
-                  {member.name || member.email}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+              <Input
+                id="assignee"
+                value={assignee}
+                onChange={(e) => setAssignee(e.target.value)}
+                placeholder="Assignee name"
+              />
             </div>
           </div>
         </div>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useauth } from '../store/AuthContext';
-import { useNavigate } from 'react-router-dom';
+
 import { getProjects, getTasksByProject, getTaskStats } from '../api/AxiosAuth';
 import KanbanBoard from '../components/kanban-board';
 import { KanbanProvider } from '../components/kanban-provider';
@@ -10,7 +10,6 @@ import { Input } from '../components/ui/input';
 import { Button } from '../components/ui/button';
 import { Textarea } from "../components/ui/textarea"
 import { createProject } from '../api/AxiosAuth';
-import CalendarPage from '../components/Calender';
 import {   Dialog,
     DialogClose,
     DialogContent,
@@ -39,7 +38,7 @@ const Dashboard = () => {
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false)
   const [editingTask, setEditingTask] = useState(null);
 
-const navigate = useNavigate();
+
 
     const [filters, setFilters] = useState({
         status: '',
@@ -88,9 +87,8 @@ const navigate = useNavigate();
                 console.log("Processed task lists data:", taskListsData);
                 // Ensure taskListsData is an array
                 const tasksArray = Array.isArray(taskListsData) ? taskListsData : [taskListsData];
-                const filteredTask = tasksArray.filter(task=> task.project === selectproject.id);
                 console.log("Tasks array:", tasksArray);
-                setTasks(filteredTask);
+                setTasks(tasksArray);
                 setError(null);
             } catch (error) {
                 console.error('Error fetching task lists:', error);
@@ -118,7 +116,6 @@ const navigate = useNavigate();
 
     const onSelect = (proj) => {
         setSelectProject(proj);
-        setTasks([]); //clear task
         console.log("Selected project:", proj);
     };
 
@@ -127,11 +124,10 @@ const ensureTaskList = async (projectId) => {
     // Check if project has task lists
     if (!selectproject?.task_lists?.length) {
       // Create default task list
-      const response = await createTaskList({
+      const response = await createTaskList(projectId, {
         name: "Default Task List",
         project: projectId
       });
-      console.log("Created task list for project:", projectId);
       
       // Update the selected project with new task list
       setSelectProject(prev => ({
@@ -232,7 +228,6 @@ const openCreateTaskModal = async () => {
                     >
                         Logout
                     </Button>
-                    <Button onClick={() => navigate("/calender")}>Calender</Button>
                 </div>
             </div>
 
@@ -404,7 +399,7 @@ const openCreateTaskModal = async () => {
                             >
                                 <KanbanBoard 
                                     projectId={selectproject.id} 
-                                    taskListId={selectproject.task_lists?.[0]?.id} 
+                                    taskListId={tasks[0].id} 
                                 />
                             </KanbanProvider>
                         </>
