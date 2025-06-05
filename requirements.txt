@@ -1,4 +1,8 @@
-Django
+django
+djangorestframework
+django-cors-headers
 gunicorn
-whitenoise  # For static files
-django-cors-headers  # If React needs API access
+whitenoise
+dj-database-url
+psycopg2-binary
+rest_framework
