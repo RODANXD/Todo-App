@@ -6,35 +6,51 @@ import { KanbanProvider } from './components/kanban-provider';
 import Dashboard from './pages/Dashboard';
 import Login from './pages/Login';
 import Register from './pages/Register';
-// import Projects from './pages/Projects';
 import authService from './api/auth';
-import './App.css'
+import './App.css';
+import AnalyticsPage from './components/Analytics';
+import CalendarPage from './components/Calender'; 
 
 const PrivateRoute = ({ children }) => {
-    const user = authService.getCurrentUser();
-    return user ? children : <Navigate to="/login" />;
+  const user = authService.getCurrentUser();
+  return user ? children : <Navigate to="/login" />;
 };
 
 const App = () => {
-    return (
-        <AuthContextP>
-            <KanbanProvider>
-                <Routes>
-                    <Route path="/login" element={<Login />} />
-                    <Route path="/register" element={<Register />} />
-                    <Route
-                        path="/"
-                        element={
-                            <PrivateRouter>
-                                <Dashboard />
-                            </PrivateRouter>
-                        }
-                    />
-                    {/* <Route path="/" element={<Navigate to="/Dashboard" />} /> */}
-                </Routes>
-            </KanbanProvider>
-        </AuthContextP>
-    );
+  return (
+    <AuthContextP>
+      <KanbanProvider>
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route
+            path="/"
+            element={
+              <PrivateRouter>
+                <Dashboard />
+              </PrivateRouter>
+            }
+          />
+          <Route
+            path="/calender"
+            element={
+              <PrivateRouter>
+                <CalendarPage />
+              </PrivateRouter>
+            }
+          />
+          <Route
+            path="/analytics"
+            element={
+              <PrivateRouter>
+                <AnalyticsPage />
+              </PrivateRouter>
+            }
+          />
+        </Routes>
+      </KanbanProvider>
+    </AuthContextP>
+  );
 };
 
 export default App;

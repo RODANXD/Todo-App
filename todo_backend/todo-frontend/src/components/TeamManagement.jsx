@@ -1,12 +1,31 @@
-import React, { useState } from 'react';
-import { inviteTeamMember, updateMemberRole, removeMember } from '../api/AxiosAuth';
+import React, { useEffect, useState } from 'react';
+import { inviteTeamMember, updateMemberRole, removeMember, getProjectMembers } from '../api/AxiosAuth';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 const TeamManagement = ({ project, onClose }) => {
+    const [members, setMembers] = useState([]);
     const [email, setEmail] = useState('');
     const [role, setRole] = useState('member');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
+
+
+
+
+    useEffect(()=>{
+        const fetchMembers = async () => {
+            try {
+                const response = await getProjectMembers(project.id);
+                setMembers(response.data);
+                // const data = await response.json();
+                // setMembers(data);
+            } catch (error) {
+                console.error('Failed to fetch members:', error);
+            }
+        };
+
+        fetchMembers();
+    }, [project.id])
 
     const handleInvite = async (e) => {
         e.preventDefault();

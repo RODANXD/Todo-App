@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useauth } from '../store/AuthContext';
-
+import { useNavigate } from 'react-router-dom';
 import { getProjects, getTasksByProject, getTaskStats } from '../api/AxiosAuth';
 import KanbanBoard from '../components/kanban-board';
 import { KanbanProvider } from '../components/kanban-provider';
@@ -10,6 +10,7 @@ import { Input } from '../components/ui/input';
 import { Button } from '../components/ui/button';
 import { Textarea } from "../components/ui/textarea"
 import { createProject } from '../api/AxiosAuth';
+import CalendarPage from '../components/Calender';
 import {   Dialog,
     DialogClose,
     DialogContent,
@@ -38,7 +39,7 @@ const Dashboard = () => {
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false)
   const [editingTask, setEditingTask] = useState(null);
 
-
+const navigate = useNavigate();
 
     const [filters, setFilters] = useState({
         status: '',
@@ -87,8 +88,9 @@ const Dashboard = () => {
                 console.log("Processed task lists data:", taskListsData);
                 // Ensure taskListsData is an array
                 const tasksArray = Array.isArray(taskListsData) ? taskListsData : [taskListsData];
+                const filteredTask = tasksArray.filter(task=> task.project === selectproject.id);
                 console.log("Tasks array:", tasksArray);
-                setTasks(tasksArray);
+                setTasks(filteredTask);
                 setError(null);
             } catch (error) {
                 console.error('Error fetching task lists:', error);
@@ -111,39 +113,94 @@ const Dashboard = () => {
             }
         };
 
+        if (selectproject) {
+        console.log("Selected project task lists:", selectproject.task_lists);
+        console.log("First task list ID:", selectproject?.task_lists?.[0]?.id);
+    }
+
         fetchStats();
     }, [selectproject]);
 
-    const onSelect = (proj) => {
+const onSelect = async (proj) => {
+    try {
+        console.log("Selecting project:", proj);
+        
+        // Set the selected project first
         setSelectProject(proj);
-        console.log("Selected project:", proj);
-    };
+        setTasks([]); // clear tasks
+        
+        // Wait a moment for state to update
+        await new Promise(resolve => setTimeout(resolve, 0));
+        
+        // Ensure task list exists
+        if (!proj.task_lists?.length) {
+            console.log("No task lists found, creating one for project", proj.id);
+            const taskListId = await ensureTaskList(proj.id);
+            console.log("Created task list with ID:", taskListId);
+            
+            // Fetch updated project data to get the new task list
+            const updatedProj = {
+                ...proj,
+                task_lists: [{
+                    id: taskListId,
+                    name: "Default Task List",
+                    project: proj.id
+                }]
+            };
+            setSelectProject(updatedProj);
+        }
+    } catch (error) {
+        console.error("Error in project selection:", error);
+        setError(`Error selecting project: ${error.message}`);
+        alert(`Error selecting project: ${error.message}`);
+    }
+};
 
 const ensureTaskList = async (projectId) => {
   try {
+    console.log("Current selected project:", selectproject);
+    console.log("Project task lists:", selectproject?.task_lists);
+
     // Check if project has task lists
     if (!selectproject?.task_lists?.length) {
       // Create default task list
-      const response = await createTaskList(projectId, {
+      console.log("No task lists found, creating default task list");
+      const taskListData = {
         name: "Default Task List",
-        project: projectId
-      });
-      
+        project: projectId,
+        description: "Default task list for project"
+      };
+
+      const response = await createTaskList(taskListData);
+      console.log("Task list creation response:", response.data);
+
+      if (!response.data) {
+        throw new Error("Failed to create task list - no response data");
+      }
+
       // Update the selected project with new task list
-      setSelectProject(prev => ({
-        ...prev,
-        task_lists: [...(prev.task_lists || []), response.data]
-      }));
-      
+      const updatedProject = {
+        ...selectproject,
+        task_lists: [response.data]
+      };
+      setSelectProject(updatedProject);
+
       return response.data.id;
     }
-    
+
+    if (!selectproject.task_lists[0]?.id) {
+      throw new Error("Task list exists but has no ID");
+    }
+
+    console.log("Using existing task list:", selectproject.task_lists[0]);
     return selectproject.task_lists[0].id;
   } catch (error) {
     console.error("Error ensuring task list:", error);
-    throw new Error("Failed to create task list");
+    throw new Error(`Failed to create task list: ${error.message}`);
   }
 };
+
+
 
 const openCreateTaskModal = async () => {
     if (!selectproject) {
@@ -228,6 +285,8 @@ const openCreateTaskModal = async () => {
                     >
                         Logout
                     </Button>
+                    <Button onClick={() => navigate("/calender")}>Calender</Button>
+                    <Button onClick={() => navigate("/analytics")} >Anaytics</Button>
                 </div>
             </div>
 
@@ -399,7 +458,7 @@ const openCreateTaskModal = async () => {
                             >
                                 <KanbanBoard 
                                     projectId={selectproject.id} 
-                                    taskListId={tasks[0].id} 
+                                    taskListId={selectproject.task_lists?.[0]?.id} 
                                 />
                             </KanbanProvider>
                         </>
@@ -419,14 +478,23 @@ const openCreateTaskModal = async () => {
         isOpen={isTaskModalOpen} 
         onClose={closeTaskModal} 
         task={editingTask} 
-        projectId={selectproject.id}
-        taskListId={selectproject.task_lists?.[0]?.id} 
+        projectId={selectproject?.id}
+        taskListId={selectproject?.task_lists?.[0]?.id} 
         onSuccess={() => {
+            console.log("Task operation successful");
             closeTaskModal();
             // Refresh tasks
-            fetchTaskLists();
+            const fetchTasks = async () => {
+                try {
+                    const response = await getTasksByProject(selectproject.id);
+                    setTasks(response.data.results || response.data);
+                } catch (error) {
+                    console.error("Error fetching tasks:", error);
+                }
+            };
+            fetchTasks();
         }}
-            />
+    />
         )}
     </div>
 ) : (
