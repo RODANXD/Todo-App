@@ -125,7 +125,7 @@ EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'mansiankush56@gmail.com'
-EMAIL_HOST_PASSWORD = 'your password'
+EMAIL_HOST_PASSWORD = 'gvea ywtr apmk uauy'
 DEFAULT_FROM_EMAIL = 'mansiankush56@gmail.com'
 FRONTEND_URL = 'http://localhost:5173'
 
