@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useauth } from '../store/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { getProjects, getTasksByProject, getTaskStats } from '../api/AxiosAuth';
+import { getProjects, getTasksByProject, getTaskStats, updateProject } from '../api/AxiosAuth';
 import KanbanBoard from '../components/kanban-board';
 import { KanbanProvider } from '../components/kanban-provider';
 import TeamManagement from '../components/TeamManagement';
@@ -9,7 +9,8 @@ import TaskStats from '../components/TaskStats';
 import { Input } from '../components/ui/input';
 import { Button } from '../components/ui/button';
 import { Textarea } from "../components/ui/textarea"
-import { createProject } from '../api/AxiosAuth';
+import { createProject, deleteProject } from '../api/AxiosAuth';
+import {MoreHorizontal} from 'lucide-react'
 import CalendarPage from '../components/Calender';
 import {   Dialog,
     DialogClose,
@@ -19,6 +20,8 @@ import {   Dialog,
     DialogHeader,
     DialogTitle,
     DialogTrigger } from "../components/ui/dialog"
+
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../components/ui/dropdown-menu"
 
 import { createTaskList } from '../api/AxiosAuth';
 // import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select"
@@ -38,6 +41,8 @@ const Dashboard = () => {
   const [description, setDescription] = useState("")
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false)
   const [editingTask, setEditingTask] = useState(null);
+    const [organization, setorganization] = useState('');
+    const [editingProject, setEditingProject] = useState(null);
 
 const navigate = useNavigate();
 
@@ -200,7 +205,34 @@ const ensureTaskList = async (projectId) => {
   }
 };
 
+const handleEditProject = (project) => {
+  event.stopPropagation();
+  setEditingProject(project);
+  setName(project.name);
+  setDescription(project.description);
+  setorganization(project.organization);
+  setIsOpen(true);
+};
+const handleDeleteProject = async (projectId) => {
+  event.stopPropagation();
+  if (window.confirm(`Are you sure you want to delete project "${projectId}"?`)) {
+    try {
+      await deleteProject(projectId);
+      setProjects(projects.filter((p) => p.id !== projectId));
 
+
+      if (selectproject?.id == projectId){
+        setSelectProject(null);
+        setTasks([]);
+      }
+
+      alert("Project deleted successfully")
+      window.location.reload();
+    } catch (error) {
+      console.error("Error deleting project:", error);
+    }
+  }
+};
 
 const openCreateTaskModal = async () => {
     if (!selectproject) {
@@ -227,23 +259,39 @@ const openCreateTaskModal = async () => {
     
 
     const handleSubmit = async () => {
-        if (!name.trim()) return
+        if (!name.trim()) {
+            alert("Projectname is required")
+            return;
+            
+        }
       
-        const taskData = {
+        const projectData = {
           name,
           description,
+          organization,
         }
       
         console.log("=== Project CREATION DEBUG ===")
-        console.log("Task Data being sent:", taskData)
+        // console.log("Task Data being sent:", taskData)
+        console.log("Project Data being sent:", projectData);
+        console.log("Editing Project:", editingProject);
         console.log("==========================")
         
         try {
-          if (task) {
+          if (editingProject) {
             // const updateResponse = await updateTask(task.id, taskData)
-            updateTaskInState({ ...taskData, id: task.id })
+            await updateProject(editingProject.id, projectData)
+            setProjects(
+              projects.map((p) =>
+                p.id === editingProject.id ? { ...p, ...projectData } : p
+              )
+            );
+            alert("project update successfully")
+
+            // updateTaskInState({ ...taskData, id: task.id })
           } else {
-            const response = await createProject(taskData)
+            const response = await createProject(projectData)
+            setProjects([...projects, response.data]);
             // addTask({ 
             //   ...response.data, 
             //   id: response.data.id || crypto.randomUUID(),
@@ -252,7 +300,13 @@ const openCreateTaskModal = async () => {
             // })
             
             alert("Task created sucessfully")
+                    setIsOpen(false);
+        setEditingProject(null);
+        setName('');
+        setDescription('');
+        setorganization('');
             window.location.reload()
+            
           }
           onClose()
         } catch (error) {
@@ -269,7 +323,7 @@ const openCreateTaskModal = async () => {
     }
 
     return (
-        <main className="min-h-screen bg-gray-50 p-4 flex flex-col items-center gap-4">
+        <main className="min-h-screen p-4 flex flex-col items-center gap-4">
             <div className="w-full flex justify-between items-center">
                 <h1 className="text-3xl font-bold">Dashboard</h1>
                 <div className="flex gap-4">
@@ -301,33 +355,65 @@ const openCreateTaskModal = async () => {
             <div className="w-full flex gap-4">
                 <div className="w-64 border-r p-4 bg-white rounded-lg shadow">
                     <h3 className="text-lg font-semibold mb-4">Projects</h3>
-                    <Dialog >
-                    <DialogTrigger asChild>
-          <Button variant="outline">Add Project</Button>
-        </DialogTrigger>
-      <DialogContent className="sm:max-w-[500px]">
-        <DialogHeader>
-          <DialogTitle>{task ? "Edit Task" : "Create New Task"}</DialogTitle>
-        </DialogHeader>
-        <div className="grid gap-4 py-4">
-          <div className="grid gap-2">
-            <Label htmlFor="title">Title</Label>
-            <Input id="title" value={name} onChange={(e) => setName(e.target.value)} placeholder="Task title" />
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="description">Description</Label>
-            <Textarea
-              id="description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Task description"
-              rows={3}
-            />
-          </div>
-          </div>
-      <Button onClick={handleSubmit}>Add project</Button>
-      </DialogContent>
-      </Dialog>
+                    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+  <DialogTrigger asChild>
+    <Button variant="outline">Add Project</Button>
+  </DialogTrigger>
+  <DialogContent className="sm:max-w-[500px]">
+    <DialogHeader>
+      <DialogTitle>
+        {editingProject ? "Edit Project" : "Create New Project"}
+      </DialogTitle>
+    </DialogHeader>
+    <div className="grid gap-4 py-4">
+      <div className="grid gap-2">
+        <Label htmlFor="title">Title</Label>
+        <Input
+          id="title"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="Project title"
+        />
+      </div>
+      <div className="grid gap-2">
+        <Label htmlFor="description">Description</Label>
+        <Textarea
+          id="description"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          placeholder="Project description"
+          rows={3}
+        />
+      </div>
+      <div className="grid gap-2">
+        <Label htmlFor="organization">Organization ID</Label>
+        <Input
+          id="organization"
+          type="number"
+          value={organization}
+          onChange={(e) => setorganization(e.target.value)}
+          placeholder="Organization ID"
+        />
+      </div>
+    </div>
+    <DialogFooter>
+      <DialogClose asChild>
+        <Button variant="outline" onClick={() => {
+          setIsOpen(false);
+          setEditingProject(null);
+          setName('');
+          setDescription('');
+          setorganization('');
+        }}>
+          Cancel
+        </Button>
+      </DialogClose>
+      <Button onClick={handleSubmit}>
+        {editingProject ? "Update Project" : "Add Project"}
+      </Button>
+    </DialogFooter>
+  </DialogContent>
+</Dialog>
       
 
                     
@@ -344,6 +430,24 @@ const openCreateTaskModal = async () => {
                                     onClick={() => onSelect(proj)}
                                 >
                                     {proj.name}
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button variant="ghost" size="icon" className="h-8 w-8 " onClick={(e)=> e.stopPropagation()}>
+                                                <MoreHorizontal className="h-4 w-4" />
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end">
+                                            <DropdownMenuItem onClick={() => handleEditProject(proj)}>
+                                                Edit project
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem
+                                                className="text-red-600"
+                                                onClick={() => handleDeleteProject(proj.id)}
+                                            >
+                                                Delete project
+                                            </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
                                 </li>
                             ))}
                         </ul>
@@ -359,8 +463,10 @@ const openCreateTaskModal = async () => {
                 
                 <div className="flex-1 p-4 bg-white rounded-lg shadow">
                     <h2 className="text-xl font-bold mb-4">
-                        {selectproject?.name || 'Select a Project'}
+                        {selectproject?.name || 'Select a Project'} <br />
+                        <span className='text-gray-500 text-sm'>{selectproject?.description}</span>
                     </h2>
+                    
                     
                     {selectproject && tasks.length > 0 ? (
                         <>

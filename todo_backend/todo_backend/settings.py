@@ -24,11 +24,13 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-y*8llvwz1_x!zhg-us&cu04$^h7=c#e2&r$#+_3s^c74an-0wq'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-# DEBUG = True
-DEBUG = False
+DEBUG = True
+# DEBUG = False
 
 ALLOWED_HOSTS = ['*']
 
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # Application definition
 
@@ -46,6 +48,9 @@ INSTALLED_APPS = [
     'users',
     'tasks',
     'project',
+    'organizations',
+    'invitation',
+    
 ]
 
 MIDDLEWARE = [
@@ -114,6 +119,28 @@ SIMPLE_JWT = {
 }
 
 
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+# EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'mansiankush56@gmail.com'
+EMAIL_HOST_PASSWORD = 'gvea ywtr apmk uauy'
+DEFAULT_FROM_EMAIL = 'mansiankush56@gmail.com'
+FRONTEND_URL = 'http://localhost:5173'
+
+
+
+
+
+
+
+
+
+
+
+
+
 # Password validation
 # https://docs.djangoproject.com/en/5.0/ref/settings/#auth-password-validators
 
@@ -155,10 +182,19 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 # CORS settings
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
-    "http://127.0.0.1:5173",
+    # "http://127.0.0.1:5173",
+    'http://116.202.210.102',
+    "https://3njncz1t-5173.inc1.devtunnels.ms",
+    "https://3njncz1t-8000.inc1.devtunnels.ms"
+    
 ]
 
 CORS_ALLOW_CREDENTIALS = True
+
+# CSRF_TRUSTED_ORIGINS = [
+#     "https://3njncz1t-5173.inc1.devtunnels.ms",
+#     "https://3njncz1t-8000.inc1.devtunnels.ms",
+# ]
 
 CORS_ALLOW_METHODS = [
     'DELETE',

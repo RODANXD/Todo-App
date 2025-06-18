@@ -4,3 +4,4 @@ from .models import Project,TaskList
 
 admin.site.register(Project)
 admin.site.register(TaskList)
+admin.site.site_header = "Todo Admin"

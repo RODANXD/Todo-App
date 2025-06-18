@@ -13,6 +13,9 @@ const TeamManagement = ({ project, onClose }) => {
 
 
     useEffect(()=>{
+                fetchMembers();
+    }, [project.id])
+        
         const fetchMembers = async () => {
             try {
                 const response = await getProjectMembers(project.id);
@@ -24,8 +27,7 @@ const TeamManagement = ({ project, onClose }) => {
             }
         };
 
-        fetchMembers();
-    }, [project.id])
+
 
     const handleInvite = async (e) => {
         e.preventDefault();
@@ -48,8 +50,10 @@ const TeamManagement = ({ project, onClose }) => {
     const handleRoleChange = async (memberId, newRole) => {
         try {
             await updateMemberRole(project.id, memberId, newRole);
+            await fetchMembers();
             // Refresh project data
             onClose();
+            if (onUpdate) onUpdate();
         } catch (error) {
             setError(error.response?.data?.message || 'Failed to update role');
         }
@@ -58,6 +62,8 @@ const TeamManagement = ({ project, onClose }) => {
     const handleRemoveMember = async (memberId) => {
         try {
             await removeMember(project.id, memberId);
+            await fetchMembers();
+            if (onUpdate) onUpdate();
             // Refresh project data
             onClose();
         } catch (error) {
@@ -91,7 +97,7 @@ const TeamManagement = ({ project, onClose }) => {
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                             placeholder="Enter email address"
-                            className="flex-1 border p-2 rounded bg-slate-200 placeholder:text-black "
+                            className="flex-1 border p-2 rounded bg-slate-200 placeholder:text-black"
                             required
                         />
                         <select
@@ -114,13 +120,13 @@ const TeamManagement = ({ project, onClose }) => {
 
                 <div className="space-y-4">
                     <h3 className="text-lg font-semibold">Current Team Members</h3>
-                    {project.members?.map((member) => (
+                    {members.map((member) => (
                         <div
                             key={member.id}
                             className="flex items-center justify-between p-3 bg-gray-50 rounded"
                         >
                             <div>
-                                <p className="font-medium">{member.name}</p>
+                                <p className="font-medium">{member.user.name}</p>
                                 <p className="text-sm text-gray-500">{member.email}</p>
                             </div>
                             <div className="flex items-center gap-4">

@@ -1,5 +1,5 @@
 from rest_framework import generics, status
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import api_view, permission_classes, action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django.shortcuts import get_object_or_404
@@ -8,8 +8,9 @@ from .models import Project, TaskList, ProjectRole
 from rest_framework.views import APIView
 from .serializers import ProjectSerializer, TaskListSerializer, ProjectRoleSerializer
 from django.contrib.auth import get_user_model
-
-
+from rest_framework.viewsets import ModelViewSet
+from organizations.models import Organization, OrganizationMember
+from django.utils import timezone
 
 User = get_user_model()
 
@@ -91,6 +92,126 @@ class TaskListView(generics.ListCreateAPIView):
         serializer.save(project=project)
 
 
+class ProjectViewSet(ModelViewSet):
+    serializer_class = ProjectSerializer
+    permission_classes = [IsAuthenticated]
+    
+    def get_queryset(self):
+        return Project.objects.filter(
+            models.Q(owner = self.request.user) | models.Q(roles__user = self.request.user)
+        ).distinct()
+        
+        
+    def perform_create(self, serializer):
+        organization = self.request.user.current_organization
+        if not organization:
+            organization, created = Organization.objects.get_or_create(
+                name=f"{self.request.user.username}'s Organization",
+                slug = f"{self.request.user.username}-organization",
+                defaults={'description': f"Default Oraganization for {self.request.user.username}"}
+                
+            )
+            
+            if created:
+                OrganizationMember.objects.create(
+                    organization= organization,
+                    user = self.request.user,
+                    role='admin',
+                    joined_at = timezone.now(),
+                
+                )
+                
+            self.request.user.current_organization = organization
+            self.request.user.save()
+        
+        project = serializer.save(
+            owner=self.request.user,
+            organization=organization
+        )
+        ProjectRole.objects.create(project=project, user=self.request.user, role='owner')
+        
+    @action(detail = True, methods =['post'])
+    def archive(self, request, pk=None):
+        project = self.get_object()
+        project.is_archived = True
+        project.status = 'archived'
+        project.save()
+        return Response({'message': 'Project archived successfully'})
+    
+    @action(detail=True, methods=['post'])
+    def duplicate(self, request, pk=None):
+        try:
+            try:
+                project = Project.objects.get(pk=pk)
+            except Project.DoesNotExist:
+                return Response(
+                    {"error": f"Project with id {pk} does not exist"}, 
+                    status=status.HTTP_404_NOT_FOUND
+                )
+    
+            # Check permissions
+            if not (project.owner == request.user or project.roles.filter(user=request.user).exists()):
+                return Response(
+                    {"error": "You don't have permission to access this project"}, 
+                    status=status.HTTP_403_FORBIDDEN
+                )
+    
+            new_name = request.data.get('name', f"Copy of {project.name}")
+            
+            # Get or create organization
+            organization = project.organization or request.user.current_organization
+            if not organization:
+                organization = Organization.objects.create(
+                    name=f"{request.user.username}'s Organization",
+                    slug=f"{request.user.username}-organization",
+                    description=f"Default Organization for {request.user.username}"
+                )
+                OrganizationMember.objects.create(
+                    organization=organization,
+                    user=request.user,
+                    role='admin',
+                    joined_at=timezone.now()
+                )
+    
+            # Create new project with proper date handling
+            new_project = Project.objects.create(
+                name=new_name,
+                description=project.description,
+                owner=request.user,
+                organization=organization,
+                status='active',
+                start_date=timezone.now().date(),  # Convert datetime to date
+                end_date=None,
+                is_archived=False
+            )
+    
+            # Copy task lists
+            for task_list in project.task_lists.all():
+                TaskList.objects.create(
+                    project=new_project,
+                    name=task_list.name,
+                    order=task_list.order
+                )
+    
+            # Create owner role
+            ProjectRole.objects.create(
+                project=new_project,
+                user=request.user,
+                role='owner'
+            )
+    
+            serializer = self.get_serializer(new_project)
+            return Response(
+                {"message": "Project duplicated successfully", "data": serializer.data}, 
+                status=status.HTTP_201_CREATED
+            )
+    
+        except Exception as e:
+            return Response(
+                {"error": f"Failed to duplicate project: {str(e)}"}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
 
 class ProjectMembersView(APIView):
     permission_classes = [IsAuthenticated]
@@ -106,16 +227,17 @@ class ProjectMembersView(APIView):
         
         # Get all roles for the project
         roles = ProjectRole.objects.filter(project=project).select_related('user')
-        members = []
+        serializer = ProjectRoleSerializer(roles, many=True)
+        # members = []
         
-        # Add owner
-        members.append({
-            'id': project.owner.id,
-            'email': project.owner.email,
-            'name': project.owner.get_full_name(),
-            'role': 'owner'
-        })
-        return Response(members)
+        # # Add owner
+        # members.append({
+        #     'id': project.owner.id,
+        #     'email': project.owner.email,
+        #     'name': project.owner.get_full_name(),
+        #     'role': 'owner'
+        # })
+        return Response(serializer.data)
     
     
     def post(self, request, project_id):
@@ -156,6 +278,46 @@ class ProjectMembersView(APIView):
                 {"error": "User not found"}, 
                 status=status.HTTP_404_NOT_FOUND
             )
+    def patch(self, request, project_id, member_id):
+        """Update member role"""
+        project = get_object_or_404(Project, id=project_id)
+        if not project.can_edit(request.user):
+            return Response(
+                {"error": "You don't have permission to update roles"}, 
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        role = request.data.get('role')
+        project_role = get_object_or_404(ProjectRole, id=member_id, project=project)
+        
+        if project_role.user == project.owner:
+            return Response(
+                {"error": "Cannot modify owner's role"}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        project_role.role = role
+        project_role.save()
+        return Response({"message": "Role updated successfully"})
+
+    def delete(self, request, project_id, member_id):
+        """Remove a member from the project"""
+        project = get_object_or_404(Project, id=project_id)
+        if not project.can_edit(request.user):
+            return Response(
+                {"error": "You don't have permission to remove members"}, 
+                status=status.HTTP_403_FORBIDDEN
+            )
+        project_role = get_object_or_404(ProjectRole, id=member_id, project=project)
+        
+        if project_role.user == project.owner:
+            return Response(
+                {"error": "Cannot remove project owner"}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        project_role.delete()
+        return Response({"message": "Member removed successfully"})
 
 
 
@@ -167,8 +329,6 @@ def add_collaborator(request, project_id):
     email = request.data.get('email')
     
     try:
-        from django.contrib.auth import get_user_model
-        User = get_user_model()
         user = User.objects.get(email=email)
         project.collaborators.add(user)
         return Response({'message': 'Collaborator added successfully'})

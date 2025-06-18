@@ -2,13 +2,16 @@ import React from 'react'
 import axios from 'axios'
 
 const baseURL = 'http://127.0.0.1:8000/api/'
+// const baseURL = 'https://3njncz1t-8000.inc1.devtunnels.ms/api/'
+
 
 const axiosinstance = axios.create({
     baseURL,
     timeout: 5000,
     headers: {
         'Content-Type': 'application/json',
-    }
+    },
+    withCredentials: true
 })
 
 axiosinstance.interceptors.response.use(
@@ -69,6 +72,7 @@ export const createProject = (data) => axiosinstance.post('/project/', data);
 export const updateProject = (projectId, data) => axiosinstance.put(`/project/${projectId}/`, data);
 export const deleteProject = (projectId) => axiosinstance.delete(`/project/${projectId}/`);
 
+export const createOrganizationid = (data) => axiosinstance.post('/organizations/', data);
 // TaskList APIs
 export const getTaskLists = (projectId) => axiosinstance.get(`/tasks/?tasklist=${projectId}`);
 export const validateTaskList = async (taskListId) => {
@@ -83,6 +87,19 @@ export const validateTaskList = async (taskListId) => {
 };
 export const createTaskWithList = async (data) => {
   try {
+
+    const formattedData = {
+      title: data.title,
+      description: data.description || "",
+      status: data.status || "todo",
+      priority: data.priority || "medium",
+      due_date: data.due_date ? new Date(data.due_date).toISOString() : null,
+      project: parseInt(data.project),
+      task_list: parseInt(data.task_list),
+      assigned_to: data.assigned_to || null,
+      dependencies: Array.isArray(data.dependencies) ? data.dependencies : []
+    };
+
     // Validate required fields
     if (!data.task_list || !data.project) {
       throw new Error("Both project and task list IDs are required");
@@ -96,6 +113,7 @@ export const createTaskWithList = async (data) => {
     if (projectId === taskListId) {
       throw new Error("Project ID and Task List ID cannot be the same");
     }
+    
 
     // Create task with validated data
     const response = await axiosinstance.post('/tasks/', {
@@ -104,6 +122,7 @@ export const createTaskWithList = async (data) => {
       task_list: taskListId,
       status: data.status || 'todo'
     });
+    
 
     return response;
   } catch (error) {
@@ -121,14 +140,27 @@ export const getTasks = (taskListId) => axiosinstance.get(`/tasks/?tasklist=${ta
 export const createTask = (data) => axiosinstance.post('/tasks/', data);
 
 
-export const updateTask = (taskId, data) => {
-    const taskData = {
-        ...data,
-        project: parseInt(data.project),
-        task_list: parseInt(data.task_list)
+export const updateTask = async (taskId, data) => {
+  try {
+    const formattedData = {
+      title: data.title,
+      description: data.description || "",
+      status: data.status || "todo",
+      priority: data.priority || "medium",
+      due_date: data.due_date ? new Date(data.due_date).toISOString() : null,
+      project: parseInt(data.project),
+      task_list: parseInt(data.task_list),
+      assigned_to: data.assigned_to || null,
+      dependencies: Array.isArray(data.dependencies) ? data.dependencies : []
     };
-    return axiosinstance.put(`/tasks/${taskId}/`, taskData);
-}
+
+    return await axiosinstance.put(`/tasks/${taskId}/`, formattedData);
+  } catch (error) {
+    console.error("Update task error:", error.response?.data || error.message);
+    throw error;
+  }
+};
+
 export const deleteTask = (taskId) =>  axiosinstance.delete(`/tasks/${taskId}/`);
 export const getTaskDetails = (taskId) => axiosinstance.get(`/tasks/${taskId}/`);
 export const updateTaskStatus = (taskId, status) => axiosinstance.patch(`/tasks/${taskId}/`, { status });
@@ -137,7 +169,7 @@ export const updateTaskStatus = (taskId, status) => axiosinstance.patch(`/tasks/
 export const getProjectMembers = (projectId) => 
   axiosinstance.get(`/project/${projectId}/members/`);
 export const inviteTeamMember = async (projectId, data) => {
-    return await axiosinstance.post(`/api/projects/${projectId}/invite/`, data);
+    return await axiosinstance.post(`/api/projects/${projectId}/members/`, data);
 };
 export const updateMemberRole = async (projectId, memberId, role) => {
     return await axiosinstance.patch(`/api/projects/${projectId}/members/${memberId}/`, { role });

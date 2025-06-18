@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.conf import settings
+from organizations.models import Organization
 
 class ProjectRole(models.Model):
     ROLE_CHOICES = [
@@ -23,11 +24,27 @@ class ProjectRole(models.Model):
         return f"{self.user.username} - {self.role} in {self.project.name}"
 
 class Project(models.Model):
+    
+    STATUS_CHOICES =[
+        ('active', 'Active'),
+        ('archived', 'Archived'),
+        ('on_hold', 'On Hold'),
+        ('completed', 'Completed'),
+    ]
+    
+    
+    
     name = models.CharField(max_length=255)
     description = models.TextField(blank=True)
     owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='owned_projects')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    organization = models.ForeignKey(Organization, on_delete=models.CASCADE, related_name='project', null=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='active')
+    is_archived = models.BooleanField(default=False)
+    start_date = models.DateField(null=True, blank=True)
+    end_date = models.DateField(null=True, blank=True)
+    
     
     def __str__(self):
         return self.name
@@ -49,14 +66,56 @@ class Project(models.Model):
         except ProjectRole.DoesNotExist:
             return None
     
+    # def can_edit(self, user):
+    #     """Check if a user can edit the project"""
+    #     role = self.get_user_role(user)
+    #     return role in ['owner', 'editor']
+    
     def can_edit(self, user):
-        """Check if a user can edit the project"""
-        role = self.get_user_role(user)
-        return role in ['owner', 'editor']
+        return (
+            self.owner == user or 
+            self.roles.filter(user=user, role__in=['owner', 'admin']).exists()
+        )
     
     def can_view(self, user):
         """Check if a user can view the project"""
         return self.get_user_role(user) is not None or self.owner == user
+    
+    
+    def archived(self):
+        self.is_archived = True
+        self.status = 'archived'
+        self.save()
+        
+    def duplicate(self, new_name =None):
+        if not self.organization:
+            raise ValueError("Cannot duplicate project without organization")
+        new_project = Project.objects.create(
+            name = new_name or f"Copy of {self.name}",
+            description = self.description,
+            organization = self.organization,
+            owner = self.owner,
+            status = 'active',
+            start_date = self.start_date,
+            end_date = self.end_date,
+            is_archived = False
+            
+        )
+        
+        for task_list in self.task_lists.all():
+            TaskList.objects.create(
+                project = new_project,
+                name = task_list.name,
+                order = task_list.order
+            )
+        for role in self.roles.exclude(role='owner'):
+            ProjectRole.objects.create(
+                project = new_project,
+                user = role.user,
+                role = role.role
+            )
+            
+        return  new_project
 
 class TaskList(models.Model):
     name = models.CharField(max_length=255)

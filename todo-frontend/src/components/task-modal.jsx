@@ -27,25 +27,30 @@ export default function TaskModal({ isOpen, onClose, task, projectId, taskListId
   const [dueDate, setDueDate] = useState(new Date())
   const [assignee, setAssignee] = useState("")
   const [projectMembers, setProjectMembers] = useState([]);
+  const [dependency, setDependency] = useState([]);
 
 
   useEffect(() => {
     if (isOpen) {
       if (task) {
-        setTitle(task.title)
-        setDescription(task.description)
-        setStatus(task.status)
-        setPriority(task.priority)
-        setDueDate(new Date(task.due_date || task.dueDate))
-        setAssignee(task.assignee || "")
-      } else {
-        setTitle("")
-        setDescription("")
-        setStatus(state.columns.length > 0 ? state.columns[0].id : "todo")
-        setPriority("medium")
-        setDueDate(new Date())
-        setAssignee("")
-      }
+      // Format existing task data
+      setTitle(task.title || "");
+      setDescription(task.description || "");
+      setStatus(task.status || "todo");
+      setPriority(task.priority || "medium");
+      setDueDate(task.due_date ? new Date(task.due_date) : new Date());
+      setAssignee(task.assigned_to || "");
+      setDependency(task.dependencies?.[0] || "");
+    } else {
+      // Reset form for new task
+      setTitle("");
+      setDescription("");
+      setStatus("todo");
+      setPriority("medium");
+      setDueDate(new Date());
+      setAssignee("");
+      setDependency("");
+    }
     }
   }, [isOpen, task, state.columns])
 
@@ -75,16 +80,18 @@ export default function TaskModal({ isOpen, onClose, task, projectId, taskListId
     return;
   }
 
-  const taskData = {
+    const taskData = {
+      title: title.trim(),
+      description: description.trim(),
+      status: status || "todo",
+      priority: priority || "medium",
+      due_date: dueDate instanceof Date ? dueDate.toISOString() : null,
+      project: projectId,
+      task_list: taskListId,
+      assigned_to: assignee || null,
+      dependencies: dependency ? [dependency] : [] // Convert to array if needed
+  
 
-    title: title,
-    description: description,
-    status: status || "todo",
-    priority: priority || "medium",
-    due_date: dueDate?.toISOString(),
-    project: parseInt(projectId), 
-    task_list: parseInt(taskListId), 
-    assigned_to: assignee || null
     // title,
     // description,
     // status,
@@ -221,6 +228,13 @@ export default function TaskModal({ isOpen, onClose, task, projectId, taskListId
                 value={assignee}
                 onChange={(e) => setAssignee(e.target.value)}
                 placeholder="Assignee name"
+              />
+              <Label htmlFor="dependecy">dependecy</Label>
+                            <Input
+                id="dependecy"
+                value={dependency}
+                onChange={(e) => setDependency(e.target.value)}
+                placeholder="Dependencies"
               />
 
               {/* <Select value={assignee} onValueChange={setAssignee}>

@@ -7,6 +7,11 @@ class User(AbstractUser):
     email_verification_token = models.CharField(max_length=100, null=True, blank=True)
     email_verification_token_created_at = models.DateTimeField(null=True, blank=True)
     profile_pic = models.ImageField(upload_to='profile_pics/', null=True, blank=True)
+    bio = models.TextField(blank=True)
+    timezone = models.CharField(max_length=50, default='UTC')
+    phone = models.CharField(max_length=20, blank=True)
+    current_organization = models.ForeignKey('organizations.Organization', on_delete=models.SET_NULL,
+                                             null=True, blank=True, related_name='current_organization')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     

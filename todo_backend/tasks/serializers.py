@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Task, SubTask,TimeLog
+from .models import Task, SubTask,TimeLog, Tag, TaskAttachment,ActivityLog,Comment
 from users.serializers import UserSerializer
 
 class SubTaskSerializer(serializers.ModelSerializer):
@@ -24,6 +24,33 @@ class TimeLogSerializer(serializers.ModelSerializer):
         duration = obj.duration()
         return str(duration) if duration else None
     
+class TagSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Tag
+        fields = ('id', 'name','color')
+        
+        
+class CommentSerializer(serializers.ModelSerializer):
+    author = UserSerializer(read_only=True)
+    class Meta:
+        model = Comment
+        fields = ('id', 'author', 'content', 'updated_at', 'created_at')
+        # read_only_fields = ('id', 'user', 'created_at')
+
+class TaskAttachmentSerializer(serializers.ModelSerializer):
+    uploaded_by = UserSerializer(read_only=True)
+    class Meta:
+        model = TaskAttachment
+        fields = ('id', 'file', 'filename', 'uploaded_by', 'uploaded_at')
+        # read_only_fields = ('id', 'uploaded_by', 'created_at')
+
+class ActivityLogSerializer(serializers.ModelSerializer):
+    user = UserSerializer(read_only=True)
+    class Meta:
+        model = ActivityLog
+        fields = ('id', 'task', 'action', 'description', 'created_at','user')
+        # read_only_fields = ('id', 'user', 'created_at'
+        
 
 
 class TaskSerializer(serializers.ModelSerializer):
@@ -32,6 +59,11 @@ class TaskSerializer(serializers.ModelSerializer):
     subtask = SubTaskSerializer(many=True, read_only=True)
     time_logs = TimeLogSerializer(many=True, read_only=True)
     total_time = serializers.SerializerMethodField()
+    comments = CommentSerializer(many=True, read_only=True)
+    tags = TagSerializer(many=True, read_only=True)
+    attachments = TaskAttachmentSerializer(many=True, read_only=True)
+    activity_logs = ActivityLogSerializer(many=True, read_only=True)
+    dependencies = serializers.PrimaryKeyRelatedField(many=True, queryset=Task.objects.all())
     
     
     class Meta:

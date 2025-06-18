@@ -28,7 +28,7 @@ class ProjectSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Project
-        fields = ('id', 'name', 'description', 'owner', 'roles', 'created_at', 'updated_at', 'task_list', 'task_count')
+        fields = ('id', 'name', 'description', 'owner','organization', 'roles', 'created_at', 'updated_at', 'task_list', 'task_count', 'status', 'is_archived', 'start_date', 'end_date')
         read_only_fields = ('id', 'owner', 'created_at', 'updated_at')
         
     def get_task_count(self, obj):

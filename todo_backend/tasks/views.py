@@ -1,13 +1,13 @@
-from rest_framework import generics, viewsets
-from rest_framework.decorators import api_view
+from rest_framework import generics, viewsets, status
+from rest_framework.decorators import api_view, action
 from rest_framework.response import Response
 from rest_framework.filters import SearchFilter, OrderingFilter
 from django_filters.rest_framework import DjangoFilterBackend, FilterSet, CharFilter
 from django.db import models
 from django.utils import timezone
 from datetime import timedelta
-from .models import Task, SubTask, TimeLog
-from .serializers import TaskSerializer, SubTaskSerializer, TimeLogSerializer
+from .models import Task, SubTask, TimeLog, Tag, TaskAttachment, Comment, ActivityLog
+from .serializers import TaskSerializer, SubTaskSerializer, TimeLogSerializer, CommentSerializer, TaskAttachmentSerializer, TagSerializer, ActivityLogSerializer
 from project.models import Project
 from django_filters import rest_framework as filters
 from django.core.exceptions import PermissionDenied
@@ -53,6 +53,34 @@ class TaskDetailView(generics.RetrieveUpdateDestroyAPIView):
         if tasklist_id is not None:
             queryset = queryset.filter(task_list_id=tasklist_id)
         return queryset
+    
+    
+    @action(detail =True, methods=['post'])
+    def add_tag(self, request, pk=None):
+        task = self.get_object()
+            
+        tag_id = request.data.get('tag_id')
+            
+        try:
+            
+            tag = Tag.objects.get(id=tag_id)
+            task.tags.add(tag)
+            task.log_activity(request.user, 'updated', f'Added tag: {tag.name}')
+            return Response({'status': 'tag added'})
+        except Tag.DoesNotExist:
+            return Response({'error': 'Tag not found'}, status=status.HTTP_404_NOT_FOUND)
+
+ 
+    @action(detail=True, methods=['post'])
+    def add_dependency(self, request, pk=None):
+        task = self.get_object()
+        dependency_id = request.data.get('dependency_id')
+        try:
+            dependency = Task.objects.get(id=dependency_id)
+            task.add_dependency(dependency)
+            return Response({'status': 'dependency added'})
+        except Task.DoesNotExist:
+            return Response({'error': 'Task not found'}, status=status.HTTP_404_NOT_FOUND)
 
 @api_view(['GET'])
 def task_analytics(request):
@@ -197,3 +225,37 @@ class TimeLogViewSet(viewsets.ModelViewSet):
         if not task.can_edit(self.request.user):
             raise PermissionDenied("You don't have permission to log time for this task")
         serializer.save(user=self.request.user)
+        
+        
+        
+class TagViewset(viewsets.ModelViewSet):
+    queryset = Tag.objects.all()
+    serializer_class = TagSerializer
+    
+
+class CommentViewSet(viewsets.ModelViewSet):
+    serializer_class = CommentSerializer
+    
+    def get_queryset(self):
+        return Comment.objects.filter(task_id = self.kwargs['task_pk'])
+    def perform_create(self,serializer):
+        task = Task.objects.get(id=self.kwargs['task_pk'])
+        if not task.can_view(self.request.user):
+            raise PermissionDenied("You don't have permission to comment on this task")
+        serializer.save(task_id=self.kwargs['task_pk'],
+            author=self.request.user
+            )
+
+
+class TaskAttachmentViewset(viewsets.ModelViewSet):
+    serializer_class = TaskAttachmentSerializer
+    
+    def get_queryset(self):
+        return TaskAttachment.objects.filter(task_id = self.kwargs['task_pk'])
+    def perform_create(self,serializer):
+        task = Task.objects.get(id=self.kwargs['task_pk'])
+        if not task.can_edit(self.request.user):
+            raise PermissionDenied("You don't have permission to attach files to this task")
+        serializer.save(task_id=self.kwargs['task_pk'],
+            uploaded_by=self.request.user
+            )
