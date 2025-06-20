@@ -64,7 +64,7 @@ axiosinstance.interceptors.request.use(
 export const register = (data) => axiosinstance.post('/users/register/', data);
 export const login = (data) => axiosinstance.post('/users/login/', data);
 export const refreshToken = (refresh) => axiosinstance.post('/users/token/refresh/', { refresh });
-export const getProfile = () => axiosinstance.get('/users/profile/');
+export const getProfile = () => axiosinstance.get('/auth/profile/');
 
 // Project APIs
 export const getProjects = () => axiosinstance.get('/project/');
@@ -193,6 +193,21 @@ export const logTime = async (taskId, duration) => {
 
 export const getTaskStats = async () => {
     return await axiosinstance.get('/tasks/stats/');
+};
+
+
+export const uploadChatAttachment = (projectId, formData) => {
+  const access = localStorage.getItem('access_token');
+  return axios.post(
+    `http://127.0.0.1:8000/api/project/${projectId}/chat/attachments/`,
+    formData,
+    {
+      headers: {
+        'Authorization': `Bearer ${access}`,
+        'Content-Type': 'multipart/form-data'
+      }
+    }
+  );
 };
 
 export default axiosinstance;

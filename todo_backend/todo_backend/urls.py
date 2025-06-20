@@ -26,5 +26,6 @@ urlpatterns = [
     path('api/tasks/', include('tasks.urls')),
     path('api/organizations/', include('organizations.urls')),
     path('api/', include('invitation.urls')),
+    path('api/scheduling/', include('scheduling.urls')),
 ]+ static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 

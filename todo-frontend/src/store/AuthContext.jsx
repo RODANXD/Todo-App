@@ -1,4 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { jwtDecode } from "jwt-decode";
+import { getProfile } from '../api/AxiosAuth';
 
 const AuthContextValue = createContext();
 
@@ -7,28 +9,85 @@ export const AuthContextP = ({ children }) => {
         isAuthenticated: false,
         accessToken: null,
         refreshToken: null,
+        user: null
     });
-    const [loading, setLoading] = useState(true); // Add loading state
+    
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const accessToken = localStorage.getItem('access_token');
-        const refresh = localStorage.getItem('refresh_token');
-        if (accessToken) {
-            setauth({ isAuthenticated: true, accessToken, refreshToken: refresh });
-        }
-        setLoading(false); // Set loading to false after checking tokens
+        const initializeAuth = async () => {
+            const accessToken = localStorage.getItem('access_token');
+            const refresh = localStorage.getItem('refresh_token');
+            
+            if (accessToken) {
+                try {
+                    // First decode the token for basic auth
+                    const decodetoken = jwtDecode(accessToken);
+                    
+                    // Then fetch the complete profile
+                    const profileResponse = await getProfile();
+                    const profileData = profileResponse.data;
+
+                    setauth({
+                        isAuthenticated: true,
+                        accessToken,
+                        refreshToken: refresh,
+                        user: {
+                            username: profileData.username,
+                            email: profileData.email,
+                            id: decodetoken.user_id,
+                            // Add any other profile data you need
+                        }
+                    });
+
+                    console.log("Profile data loaded:", profileData);
+                } catch (error) {
+                    console.error("Auth initialization failed:", error);
+                    logout();
+                }
+            }
+            setLoading(false);
+        };
+
+        initializeAuth();
     }, []);
 
-    const login = (accessToken, refreshToken) => {
-        localStorage.setItem('access_token', accessToken);
-        localStorage.setItem('refresh_token', refreshToken);
-        setauth({ isAuthenticated: true, accessToken, refreshToken });
+    const login = async (accessToken, refreshToken) => {
+        try {
+            const decodedToken = jwtDecode(accessToken);
+            localStorage.setItem('access_token', accessToken);
+            localStorage.setItem('refresh_token', refreshToken);
+            
+            // Fetch profile data after successful login
+            const profileResponse = await getProfile();
+            const profileData = profileResponse.data;
+
+            setauth({
+                isAuthenticated: true,
+                accessToken,
+                refreshToken,
+                user: {
+                    username: profileData.username,
+                    email: profileData.email,
+                    id: decodedToken.user_id,
+                    // Add any other profile data you need
+                }
+            });
+        } catch (error) {
+            console.error('Error during login:', error);
+            throw error;
+        }
     };
 
     const logout = () => {
         localStorage.removeItem('access_token');
         localStorage.removeItem('refresh_token');
-        setauth({ isAuthenticated: false, accessToken: null, refreshToken: null });
+        setauth({
+            isAuthenticated: false,
+            accessToken: null,
+            refreshToken: null,
+            user: null
+        });
     };
 
     return (

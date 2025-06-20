@@ -50,6 +50,8 @@ INSTALLED_APPS = [
     'project',
     'organizations',
     'invitation',
+    'channels',
+    'scheduling',
     
 ]
 
@@ -133,7 +135,22 @@ FRONTEND_URL = 'http://localhost:5173'
 
 
 
+ASGI_APPLICATION = 'todo_backend.asgi.application'
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels.layers.InMemoryChannelLayer',
+        # or use Redis backend for production
+        "CONFIG": {
+            "capacity": 1500,  # Maximum number of messages that can be stored
+            "expiry": 10,  # Time in seconds before messages expire
+        },
+    }
+}
 
+
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:5173",  # Your frontend URL
+]
 
 
 

@@ -12,6 +12,8 @@ import { Textarea } from "../components/ui/textarea"
 import { createProject, deleteProject } from '../api/AxiosAuth';
 import {MoreHorizontal} from 'lucide-react'
 import CalendarPage from '../components/Calender';
+import ChatInterface from '../components/ChatInterface';
+import ChatErrorBoundary from '../components/Chat-boundary';
 import {   Dialog,
     DialogClose,
     DialogContent,
@@ -44,7 +46,8 @@ const Dashboard = () => {
     const [organization, setorganization] = useState('');
     const [editingProject, setEditingProject] = useState(null);
 
-const navigate = useNavigate();
+    const navigate = useNavigate();
+    
 
     const [filters, setFilters] = useState({
         status: '',
@@ -55,7 +58,8 @@ const navigate = useNavigate();
     });
     const [sortBy, setSortBy] = useState('');
 
-    const { logout } = useauth();
+    const { logout, user, auth } = useauth();
+    console.log("user",user);
 
     useEffect(() => {
         const fetchProjects = async () => {
@@ -555,6 +559,16 @@ const openCreateTaskModal = async () => {
                                         <option value="createdBy">Creator</option>
                                     </select>
                                 </div>
+                                <ChatErrorBoundary>
+                                    {user.username ? (
+                                        <ChatInterface 
+                                            projectId={selectproject?.id} 
+                                            currentUser={user.username} 
+                                        />
+                                    ) : (
+                                        <div>Please log in to access chat</div>
+                                    )}
+                                </ChatErrorBoundary>
                             </div>
 
                             <KanbanProvider 

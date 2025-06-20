@@ -10,3 +10,5 @@ djangorestframework-simplejwt==5.2.2  # or latest version
 djangorestframework>=3.12  # if not already included
 django-filter==23.5  # or your preferred version
 Pillow==10.1.0  # Or latest stable version
+channels
+PyJWT
