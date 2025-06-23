@@ -34,9 +34,6 @@ def get_user_calendar_events(user, start_date=None, end_date=None):
     events = CalendarEvent.objects.filter(
         start_time__date__gte=start_date,
         start_time__date__lte=end_date
-    ).filter(
-        Q(project__roles__user=user) |  
-        Q(participants__user=user)      
     ).distinct()
     # Add events where user is a participant
     # participant_events = CalendarEvent.objects.filter(

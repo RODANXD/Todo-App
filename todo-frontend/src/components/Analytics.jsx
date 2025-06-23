@@ -20,8 +20,9 @@ import {
   Cell,
 } from "recharts"
 import { TrendingUp, TrendingDown, Clock, CheckCircle2, AlertTriangle, Users } from "lucide-react"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
+import axiosinstance from "../api/AxiosAuth"
 
 const weeklyData = [
   { name: "Mon", completed: 12, created: 8 },
@@ -58,8 +59,64 @@ const teamStats = [
 
 export default function AnalyticsPage() {
     const navigate = useNavigate()
+
+    const [analytics, setAnalytics] = useState(null)
+    const [stats, setStats] = useState(null)
+    const [loading, setLoading] = useState(true)
+
+    useEffect(()=>{
+      async function fetchAnalytics() {
+        setLoading(true)
+        try{
+          const [analyticsRes, statsRes] = await Promise.all([
+          axiosinstance.get("/tasks/analytics/"),
+          axiosinstance.get("/tasks/stats/")
+        ])
+        console.log("analytics",)
+        console.log("analytics", analyticsRes.data)
+        console.log("stats", statsRes.data)
+        setAnalytics(analyticsRes.data)
+        setStats(statsRes.data)
+        setLoading(false)
+        } catch (error) {
+          console.log(error)
+        }
+        setLoading(false)
+      }
+      fetchAnalytics()
+    }, [])
+      
+
+    const weeklydata = [
+      {
+        name:"This Week",
+        completed: analytics?.completed_this_week || 0,
+        created: analytics?.pending_tasks || 0,
+      },
+      {
+        name: "Overdue",
+        completed: 0,
+        created: analytics?.overdue_tasks || 0,
+      }
+    ]
+
+    // console.log("hbsh", analytics.tasks_completed_this_week)
+     const projectData = stats?.time_per_project?.map((proj) => ({
+    name: proj.task__project__name,
+    value: proj.total_time,
+    color: "#8884d8"
+  })) || []
+
+  // Productivity trend (dummy, as backend does not provide monthly trend)
+  const productivityData = [
+    { month: "This Week", hours: (stats?.time_per_task?.reduce((a, b) => a + b.total_time, 0) || 0) / 60, tasks: analytics?.tasks_this_week || 0 }
+  ]
+
+    const teamStats = [
+    { name: "You", completed: analytics?.completed_tasks || 0, inProgress: analytics?.pending_tasks || 0, overdue: analytics?.overdue_tasks || 0 }
+  ]
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-3">
       <div className="flex items-center flex-wrap justify-evenly">
         <h1 className="text-3xl font-bold tracking-tight">Analytics</h1>
         <p className="text-muted-foreground">Track your productivity and project progress</p>
@@ -73,15 +130,15 @@ export default function AnalyticsPage() {
             <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">84</div>
+            <div className="text-2xl font-bold">{analytics?.tasks_this_week ?? "--"}</div>
             <div className="flex items-center text-xs text-muted-foreground">
               <TrendingUp className="mr-1 h-3 w-3 text-green-500" />
-              +12% from last week
+              {analytics? `+${analytics.tasks_this_week??0} this week`:"not available"}
             </div>
           </CardContent>
         </Card>
 
-        <Card>
+        {/* <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Avg. Completion Time</CardTitle>
             <Clock className="h-4 w-4 text-muted-foreground" />
@@ -93,18 +150,18 @@ export default function AnalyticsPage() {
               -8% improvement
             </div>
           </CardContent>
-        </Card>
+        </Card> */}
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Team Efficiency</CardTitle>
+            <CardTitle className="text-sm font-medium">Completed Tasks</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">92%</div>
+            <div className="text-2xl font-bold">{analytics?.completed_tasks ?? "--"}</div>
             <div className="flex items-center text-xs text-muted-foreground">
               <TrendingUp className="mr-1 h-3 w-3 text-green-500" />
-              +5% this month
+             {analytics ? `+${analytics.completed_this_week ?? 0} this week` : ""}
             </div>
           </CardContent>
         </Card>
@@ -115,10 +172,10 @@ export default function AnalyticsPage() {
             <AlertTriangle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">6</div>
+            <div className="text-2xl font-bold">{analytics?.overdue_tasks ?? "--"}</div>
             <div className="flex items-center text-xs text-muted-foreground">
               <TrendingDown className="mr-1 h-3 w-3 text-green-500" />
-              -3 from yesterday
+              {analytics? `${analytics.overdue_tasks ?? 0} overdue` : "not available"}
             </div>
           </CardContent>
         </Card>
@@ -127,7 +184,7 @@ export default function AnalyticsPage() {
       <Tabs defaultValue="overview" className="space-y-4">
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="projects">Projects</TabsTrigger>
+          {/* <TabsTrigger value="projects">Projects</TabsTrigger> */}
           <TabsTrigger value="team">Team</TabsTrigger>
         </TabsList>
 
@@ -140,7 +197,7 @@ export default function AnalyticsPage() {
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={weeklyData}>
+                  <BarChart data={weeklydata}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="name" />
                     <YAxis />
@@ -173,7 +230,7 @@ export default function AnalyticsPage() {
           </div>
         </TabsContent>
 
-        <TabsContent value="projects" className="space-y-4">
+        {/* <TabsContent value="projects" className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2">
             <Card>
               <CardHeader>
@@ -220,7 +277,7 @@ export default function AnalyticsPage() {
               </CardContent>
             </Card>
           </div>
-        </TabsContent>
+        </TabsContent> */}
 
         <TabsContent value="team" className="space-y-4">
           <Card>

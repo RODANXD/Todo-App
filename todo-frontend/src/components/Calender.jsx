@@ -15,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { toast } from "react-hot-toast"
 import GanttTimeline from "./GanttTimeline"
 import WeekView from "./WeekView"
+import { useNavigate } from "react-router-dom"
 
 export default function CalendarPage() {
   const [selectedDate, setSelectedDate] = useState(new Date())
@@ -38,6 +39,8 @@ export default function CalendarPage() {
     fetchProjects();
   }, [currentMonth, view]);
 
+
+  const navigate = useNavigate()
   const fetchProjects = async () => {
     try {
       const response = await getProjects();
@@ -156,23 +159,26 @@ export default function CalendarPage() {
   
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-4">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Calendar</h1>
           <p className="text-muted-foreground">View and manage your project deadlines and events</p>
         </div>
+        <div className="flex items-center space-x-2">
         <Button onClick={() => setIsEventModalOpen(true)}>
           <Plus className="mr-2 h-4 w-4" />
           Add Event
         </Button>
+        <Button onClick={() => navigate("/")} >Back to dashboard</Button>
+        </div>
       </div>
 
       <Tabs value={view} onValueChange={setView}>
         <TabsList>
           <TabsTrigger value="month">Month</TabsTrigger>
           <TabsTrigger value="week">Week</TabsTrigger>
-          <TabsTrigger value="day">Day</TabsTrigger>
+          {/* <TabsTrigger value="day">Day</TabsTrigger> */}
           <TabsTrigger value="timeline">Timeline</TabsTrigger>
         </TabsList>
 
@@ -221,6 +227,7 @@ export default function CalendarPage() {
                     end: endOfMonth(currentMonth)
                   }).map((date) => {
                     const dayEvents = getDayEvents(date);
+                    // console.log("Day events for", date, ":", dayEvents);
                     return (
                       <div
                         key={date.toISOString()}
@@ -232,7 +239,7 @@ export default function CalendarPage() {
                           {dayEvents.map((event) => (
                             <div
                               key={event.id}
-                              className={`text-xs text-black bg-sky-600/40 p-1 rounded-md cursor-pointer ${event.type === 'task' ? 'bg-blue-100' : event.type === 'milestone' ? 'bg-green-100' : 'bg-purple-100'}`}
+                              className={`text-xs text-black bg-cyan-600/35 p-1 rounded-md cursor-pointer ${event.type === 'task' ? 'bg-blue-100' : event.type === 'milestone' ? 'bg-green-100' : 'bg-purple-100'}`}
                               onClick={(e) => {
                                 e.stopPropagation();
                                 // Handle event click
@@ -240,7 +247,12 @@ export default function CalendarPage() {
                               draggable
                               onDragStart={(e) => e.dataTransfer.setData('eventId', event.id)}
                             >
-                              {event.title}
+                              <div>{event.title} - {event.created_by.username}</div>
+                               {event.project && (
+                                 <div className="text-[10px] text-gray-500">
+                                   {event.project.getTime || `Project #${event.project}`}{event.start_time && ` - ${format(new Date(event.start_time), 'HH:mm')}`}
+                                 </div>
+                               )}
                             </div>
                           ))}
                         </div>

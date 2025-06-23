@@ -139,6 +139,7 @@ class ChatRoom(models.Model):
     name = models.CharField(max_length=255)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    is_global = models.BooleanField(default=False)
     
     def __str__(self):
         return f"Chat Room - {self.project.name}"
@@ -224,3 +225,5 @@ class ChatNotification(models.Model):
     
     def __str__(self):
         return f"{self.notification_type} notification for {self.recipient.username}"
+    
+

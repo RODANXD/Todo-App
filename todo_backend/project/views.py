@@ -594,3 +594,8 @@ def get_chat_room(request, project_id):
             status=status.HTTP_404_NOT_FOUND
         )
 
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def getglobalchatroom(request):
+    room, created = ChatRoom.objects.get_or_create(id=0, defaults={"name": "Global Chat"})
+    return Response({'room_id': room.id})

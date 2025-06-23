@@ -168,15 +168,21 @@ export const updateTaskStatus = (taskId, status) => axiosinstance.patch(`/tasks/
 
 export const getProjectMembers = (projectId) => 
   axiosinstance.get(`/project/${projectId}/members/`);
+
 export const inviteTeamMember = async (projectId, data) => {
-    return await axiosinstance.post(`/api/projects/${projectId}/members/`, data);
+    return await axiosinstance.post(`/organizations/${projectId}/invitations/`, data);
+};
+export const directprojectinvite = async (projectId, data) => {
+  console.log("Direct invite data:", data);
+    return await  axiosinstance.post(`/project/${projectId}/members/`, data);
+
 };
 export const updateMemberRole = async (projectId, memberId, role) => {
-    return await axiosinstance.patch(`/api/projects/${projectId}/members/${memberId}/`, { role });
+    return await axiosinstance.patch(`/project/${projectId}/members/${memberId}/`, { role });
 };
 
 export const removeMember = async (projectId, memberId) => {
-    return await axiosinstance.delete(`/api/projects/${projectId}/members/${memberId}/`);
+    return await axiosinstance.delete(`/project/${projectId}/members/${memberId}/`);
 };
 
 export const updateTaskOrder = async (taskListId, taskIds) => {

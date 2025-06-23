@@ -130,7 +130,7 @@ def task_stats(request):
     # Get time spent per task
     time_logs = TimeLog.objects.filter(
         task__project__in=user_projects,
-        end_time__isnull=False
+        # end_time__isnull=False
     ).values('task__id', 'task__title').annotate(
         total_time=models.Sum(
             models.ExpressionWrapper(
@@ -161,6 +161,7 @@ def task_stats(request):
         }
         for log in time_logs
     ]
+    print("Time logs list:", time_logs_list)
     
     project_time_list = [
         {

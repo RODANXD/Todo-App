@@ -4,6 +4,7 @@ from channels.db import database_sync_to_async
 from .models import ChatRoom, ChatMessage, ChatAttachment, ChatNotification, ChatReaction
 from django.contrib.auth import get_user_model
 import re
+from .models import Project
 
 class ChatConsumer(AsyncWebsocketConsumer):
     async def connect(self):
@@ -20,12 +21,11 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 return
 
             # Ensure chat room exists
-            chat_room = await self.get_or_create_chat_room()
+            chat_room = await self.getchatroom()
             if not chat_room:
                 await self.close()
                 return
-
-            # Join room group
+            
             await self.channel_layer.group_add(
                 self.room_group_name,
                 self.channel_name
@@ -37,12 +37,12 @@ class ChatConsumer(AsyncWebsocketConsumer):
             await self.close()
 
     @database_sync_to_async
-    def get_or_create_chat_room(self):
+    def getchatroom(self):
         try:
+            if str(self.room_id) == '0':
+                room, create = ChatRoom.objects.get_or_create(id=0, defaults={"name": "Global Chat"})
             return ChatRoom.objects.get(id=self.room_id)
         except ChatRoom.DoesNotExist:
-            # Try to find the project and create a chat room
-            from .models import Project
             try:
                 project = Project.objects.get(id=self.room_id)
                 return ChatRoom.objects.create(

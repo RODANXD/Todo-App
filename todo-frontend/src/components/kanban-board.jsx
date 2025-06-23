@@ -124,14 +124,14 @@ export default function KanbanBoard({ projectId, taskListId }) {
           </Button>
         </div>
         <div className="flex gap-2">
-          <Button onClick={saveData} variant="outline" className="flex items-center gap-2">
+          {/* <Button onClick={saveData} variant="outline" className="flex items-center gap-2">
             <Save className="h-4 w-4" />
             Save Project
-          </Button>
-          <Button onClick={loadData} variant="outline" className="flex items-center gap-2">
+          </Button> */}
+          {/* <Button onClick={loadData} variant="outline" className="flex items-center gap-2">
             <RotateCcw className="h-4 w-4" />
             Load Project
-          </Button>
+          </Button> */}
         </div>
       </div>
 

@@ -51,6 +51,7 @@ urlpatterns = [
     path('<int:project_id>/add-collaborator/', views.add_collaborator, name='add-collaborator'),
     path('<int:project_id>/task-lists/<int:pk>/', views.TaskListView.as_view(), name='task-list-detail'),
     path('<int:project_id>/members/', views.ProjectMembersView.as_view(), name='project-members'),
+    path('<int:project_id>/members/<int:member_id>/', views.ProjectMembersView.as_view(), name='project-member-detail'),
     path('<int:project_id>/chat/', views.ChatRoomView.as_view(), name='chat-room'),
     path('<int:project_id>/chat/messages/', views.ChatMessageListCreateView.as_view(), name='chat-messages'),
     path('<int:project_id>/chat/messages/<uuid:pk>/', views.ChatMessageDetailView.as_view(), name='chat-message-detail'),
@@ -60,4 +61,5 @@ urlpatterns = [
     path('notifications/<uuid:notification_id>/read/', views.mark_notification_read, name='mark-notification-read'),
     path('notifications/read-all/', views.mark_all_notifications_read, name='mark-all-notifications-read'),
     path('<int:project_id>/chat-room/', views.get_chat_room, name='get-chat-room'),
+    path('global-chat-room/', views.getglobalchatroom, name='getglobalchatroom'),
 ]

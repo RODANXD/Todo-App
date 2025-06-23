@@ -92,11 +92,11 @@ class OrganizationViewset(AuditLogMixin, viewsets.ModelViewSet):
     
     def get_queryset(self):
         return Organization.objects.filter(
-            org_user=self.request.user)
+            organizationmember__user=self.request.user)
         
     def perform_create(self, serializer):
-        org = serializer.save()
-        OrganizationMember.objects.create(organization=org, user=self.request.user, role='admin',joined_at=timezone.now())
+        org_id = serializer.save()
+        OrganizationMember.objects.create(organization=org_id, user=self.request.user, role='admin',joined_at=timezone.now())
         self.log_action(action="Organization created", target_type="Organization", target_id=x.instance.id)
         
         

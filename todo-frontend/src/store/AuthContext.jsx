@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { jwtDecode } from "jwt-decode";
 import { getProfile } from '../api/AxiosAuth';
-
+import { useNavigate } from 'react-router-dom';
 const AuthContextValue = createContext();
 
 export const AuthContextP = ({ children }) => {
@@ -58,7 +58,7 @@ export const AuthContextP = ({ children }) => {
             localStorage.setItem('access_token', accessToken);
             localStorage.setItem('refresh_token', refreshToken);
             
-            // Fetch profile data after successful login
+                       // Fetch profile data after successful login
             const profileResponse = await getProfile();
             const profileData = profileResponse.data;
 

@@ -1,6 +1,7 @@
 import React from 'react';
 
 const TaskStats = ({ stats }) => {
+    console.log('TaskStats stats:', stats);
     const formatDuration = (minutes) => {
         const hours = Math.floor(minutes / 60);
         const mins = minutes % 60;
@@ -30,6 +31,7 @@ const TaskStats = ({ stats }) => {
                         <div key={task.task__id} className="flex justify-between">
                             <span className="text-gray-600">{task.task__title}</span>
                             <span className="font-medium">
+                                
                                 {formatDuration(task.total_time)}
                             </span>
                         </div>
