@@ -162,7 +162,7 @@ export default function CalendarPage() {
     <div className="space-y-6 p-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Calendar</h1>
+          <h1 className="text-3xl text-white font-bold tracking-tight">Calendar</h1>
           <p className="text-muted-foreground">View and manage your project deadlines and events</p>
         </div>
         <div className="flex items-center space-x-2">

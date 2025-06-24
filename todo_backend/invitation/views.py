@@ -8,6 +8,8 @@ from django.conf import settings
 from .models import Invitation
 from .serializers import InvitationSerializers
 from .auditmixin import AuditLogMixin
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
 # Create your views here.
 
 
@@ -76,3 +78,4 @@ class InvitationViewSet(AuditLogMixin,viewsets.ModelViewSet):
             from_email=settings.DEFAULT_FROM_EMAIL,
             recipient_list=[invitation.email],
         )
+

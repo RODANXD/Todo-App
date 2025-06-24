@@ -65,6 +65,8 @@ export const register = (data) => axiosinstance.post('/users/register/', data);
 export const login = (data) => axiosinstance.post('/users/login/', data);
 export const refreshToken = (refresh) => axiosinstance.post('/users/token/refresh/', { refresh });
 export const getProfile = () => axiosinstance.get('/auth/profile/');
+export const updateProfile = (data) => axiosinstance.patch('/auth/profile/update/', data);
+export const changePassword = (data) => axiosinstance.patch('/auth/profile/update_password/', data);
 
 // Project APIs
 export const getProjects = () => axiosinstance.get('/project/');
@@ -73,6 +75,8 @@ export const updateProject = (projectId, data) => axiosinstance.put(`/project/${
 export const deleteProject = (projectId) => axiosinstance.delete(`/project/${projectId}/`);
 
 export const createOrganizationid = (data) => axiosinstance.post('/organizations/', data);
+export const getOrganization = (organizationid) => axiosinstance.get(`/organizations/`);
+// export const updateOrganization = (organizationid, data) => axiosinstance.put(`/organizations/${organizationid}/`, 
 // TaskList APIs
 export const getTaskLists = (projectId) => axiosinstance.get(`/tasks/?tasklist=${projectId}`);
 export const validateTaskList = async (taskListId) => {

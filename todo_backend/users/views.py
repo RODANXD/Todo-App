@@ -7,6 +7,11 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
 from .serializers import UserRegistrationSerializer, UserSerializer
 
+from django.conf import settings
+from django.contrib.auth import get_user_model
+from rest_framework.exceptions import NotFound
+from django.core.mail import send_mail
+
 
 
 # Create your views here.
@@ -68,3 +73,52 @@ def update_profile(request):
         serializer.save()
         return Response(serializer.data, status=status.HTTP_200_OK)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['PATCH'])
+@permission_classes([AllowAny])
+def update_password(request):
+    user = request.user
+    if not user.is_authenticated:
+        return Response({"error": "Authentication credentials were not provided."}, status=status.HTTP_401_UNAUTHORIZED)
+    
+    new_password = request.data.get('new_password')
+    if not new_password:
+        return Response({"error": "New password is required"}, status=status.HTTP_400_BAD_REQUEST)
+    
+    user.set_password(new_password)
+    user.save()
+    
+    return Response({"message": "Password updated successfully"}, status=status.HTTP_200_OK)
+
+def generate_password(length=10):
+    import random
+    import string
+    characters =  string.digits + string.punctuation + string.hexdigits
+    password = ''.join(random.choice(characters) for i in range(length))
+    return password
+
+@api_view(['POST'])
+@permission_classes([AllowAny]) 
+def forgot_pass(request):
+    email = request.data.get('email')
+    if not email:
+        return Response({"error": "Email is required"}, status=status.HTTP_400_BAD_REQUEST)
+    
+    User = get_user_model()
+    try:
+        user = User.objects.get(email=email)
+    except User.DoesNotExist:
+        return Response({"error": "User with this email does not exist"}, status=status.HTTP_404_NOT_FOUND)
+    
+    new_password = generate_password()
+    user.set_password(new_password)
+    user.save()
+    
+    send_mail(
+        subject="Password Reset",
+        message=f"Your new password is: {new_password}",
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        recipient_list=[email],
+    )
+    
+    return Response({"message": "New password has been sent to your email"}, status=status.HTTP_200_OK)
