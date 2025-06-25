@@ -37,7 +37,7 @@ const ChatInterface = ({ projectId, currentUser, onClose }) => {
     const fetchChatRoom = async () => {
       try {
         setIsLoading(true);
-        const response = await fetch(`http://localhost:8000/api/project/${projectId}/chat-room/`, {
+        const response = await fetch(`http://116.202.210.102:6969/api/project/${projectId}/chat-room/`, {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
             'Content-Type': 'application/json',
@@ -80,7 +80,7 @@ const ChatInterface = ({ projectId, currentUser, onClose }) => {
   const fetchMessages = async () => {
     if (!projectId) return;
     try {
-      const response = await fetch(`http://localhost:8000/api/project/${projectId}/chat/messages/`, {
+      const response = await fetch(`http://116.202.210.102:6969/api/project/${projectId}/chat/messages/`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('access_token')}`
         }
@@ -103,7 +103,7 @@ const ChatInterface = ({ projectId, currentUser, onClose }) => {
   useEffect(() => {
     const fetchProjectUsers = async () => {
       try {
-        const response = await fetch(`http://localhost:8000/api/project/${projectId}/members/`, {
+        const response = await fetch(`http://116.202.210.102:6969/api/project/${projectId}/members/`, {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('access_token')}`
           }
@@ -283,6 +283,7 @@ const handleFileChange = (e) => {
         <div className="space-y-4">
           {/* Render messages */}
           {Array.isArray(messageback) && messageback.map((message, index) => (
+            
             <div 
               key={index}
               className={`flex items-start space-x-3 ${
@@ -418,9 +419,7 @@ const handleFileChange = (e) => {
   onClick={() => fileInputRef.current.click()}
 >
   <Paperclip className="h-4 w-4" />
-  {selectedFile && (
-    <span className="text-xs text-muted-foreground">{selectedFile.name}</span>
-  )}
+  
 </Button>
           
           <div className="flex-1 relative">
@@ -432,6 +431,12 @@ const handleFileChange = (e) => {
               className="pr-12 bg-background"
               disabled={!isConnected}
             />
+            {selectedFile && (
+    <div className="ml-2 flex items-center space-x-1">
+    <span className="text-xs text-muted-foreground">{selectedFile.name}</span>
+    </div>
+    
+  )}
             <Button 
               variant="ghost" 
               size="sm" 

@@ -1,7 +1,7 @@
 import React from 'react'
 import axios from 'axios'
 
-const baseURL = 'http://127.0.0.1:8000/api/'
+const baseURL = 'http://116.202.210.102:6969/api/'
 // const baseURL = 'https://3njncz1t-8000.inc1.devtunnels.ms/api/'
 
 
@@ -73,6 +73,7 @@ export const getProjects = () => axiosinstance.get('/project/');
 export const createProject = (data) => axiosinstance.post('/project/', data);
 export const updateProject = (projectId, data) => axiosinstance.put(`/project/${projectId}/`, data);
 export const deleteProject = (projectId) => axiosinstance.delete(`/project/${projectId}/`);
+export const duplicateproject = (projectId) => axiosinstance.post(`/project/${projectId}/duplicate/`);
 
 export const createOrganizationid = (data) => axiosinstance.post('/organizations/', data);
 export const getOrganization = (organizationid) => axiosinstance.get(`/organizations/`);
@@ -92,17 +93,17 @@ export const validateTaskList = async (taskListId) => {
 export const createTaskWithList = async (data) => {
   try {
 
-    const formattedData = {
-      title: data.title,
-      description: data.description || "",
-      status: data.status || "todo",
-      priority: data.priority || "medium",
-      due_date: data.due_date ? new Date(data.due_date).toISOString() : null,
-      project: parseInt(data.project),
-      task_list: parseInt(data.task_list),
-      assigned_to: data.assigned_to || null,
-      dependencies: Array.isArray(data.dependencies) ? data.dependencies : []
-    };
+    // const formattedData = {
+    //   title: data.title,
+    //   description: data.description || "",
+    //   status: data.status || "todo",
+    //   priority: data.priority || "medium",
+    //   due_date: data.due_date ? new Date(data.due_date).toISOString() : null,
+    //   project: parseInt(data.project),
+    //   task_list: parseInt(data.task_list),
+    //   assigned_to: data.assigned_to || null,
+    //   dependencies: Array.isArray(data.dependencies) ? data.dependencies : []
+    // };
 
     // Validate required fields
     if (!data.task_list || !data.project) {
@@ -209,7 +210,7 @@ export const getTaskStats = async () => {
 export const uploadChatAttachment = (projectId, formData) => {
   const access = localStorage.getItem('access_token');
   return axios.post(
-    `http://127.0.0.1:8000/api/project/${projectId}/chat/attachments/`,
+    `http://116.202.210.102:6969/api/project/${projectId}/chat/attachments/`,
     formData,
     {
       headers: {
@@ -219,6 +220,27 @@ export const uploadChatAttachment = (projectId, formData) => {
     }
   );
 };
+
+
+export const getCalendarEvents = (startDate, endDate) => 
+  axiosinstance.get(`/scheduling/events/?start_date=${startDate}&end_date=${endDate}`);
+
+export const createEvent = (eventData) => 
+  axiosinstance.post('/scheduling/events/', eventData);
+
+export const updateEvent = (eventId, eventData) => 
+  axiosinstance.patch(`/scheduling/events/${eventId}/`, eventData);
+
+export const deleteEvent = (eventId) => 
+  axiosinstance.delete(`/scheduling/events/${eventId}/`);
+
+
+export const addParticipant = (eventId, userId) => 
+  axiosinstance.post(`/scheduling/events/${eventId}/participants/`, { user: userId });
+
+export const removeParticipant = (eventId, participantId) => 
+  axiosinstance.delete(`/scheduling/events/${eventId}/participants/${participantId}/`);
+
 
 export default axiosinstance;
 

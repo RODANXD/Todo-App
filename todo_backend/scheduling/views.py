@@ -1,5 +1,5 @@
 from rest_framework import viewsets, permissions, status, filters
-from .permissions import CanManageCalendarEvent, CanManageEventParticipant, CanManageEventNotification
+from .permissions import Manageventparticipants, CanManageEventParticipant, CanManageEventNotification
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
@@ -17,7 +17,7 @@ from project.models import Project
 
 class CalendarEventViewSet(viewsets.ModelViewSet):
     serializer_class = CalendarEventSerializer
-    permission_classes = [permissions.IsAuthenticated, CanManageCalendarEvent]
+    permission_classes = [permissions.IsAuthenticated, Manageventparticipants]
     filter_backends = [filters.SearchFilter]
     search_fields = ['title', 'description']
 

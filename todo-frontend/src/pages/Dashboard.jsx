@@ -47,7 +47,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "../components/ui/dropdown-menu"
-import { createTaskList } from "../api/AxiosAuth"
+import { createTaskList, duplicateproject } from "../api/AxiosAuth"
 import { Label } from "../components/ui/label"
 import TaskModal from "../components/task-modal"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card"
@@ -234,6 +234,20 @@ const Dashboard = () => {
       } catch (error) {
         console.error("Error deleting project:", error)
       }
+    }
+  }
+
+  const handleDuplicateProject = async (projectId) => {
+    event.stopPropagation()
+    try {
+      const response = await duplicateproject(projectId)
+      const newProject = response.data
+      setProjects([...projects, newProject])
+      alert("Project duplicated successfully")
+      window.location.reload()
+    } catch (error) {
+      console.error("Error duplicating project:", error)
+      alert("Failed to duplicate project: " + error.message)
     }
   }
 
@@ -594,7 +608,7 @@ const Dashboard = () => {
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  className="opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8 p-0 text-slate-400 hover:text-slate-600"
+                                  className="opacity-1 group-hover:opacity-100 transition-opacity h-8 w-8 p-0 text-slate-400 hover:text-slate-600"
                                   onClick={(e) => e.stopPropagation()}
                                 >
                                   <MoreHorizontal className="h-4 w-4" />
@@ -609,6 +623,12 @@ const Dashboard = () => {
                                   onClick={() => handleDeleteProject(proj.id)}
                                 >
                                   Delete project
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  className="text-gray-600 focus:text-gray-600"
+                                  onClick={() => handleDuplicateProject(proj.id)}
+                                >
+                                  Duplicate project
                                 </DropdownMenuItem>
                               </DropdownMenuContent>
                             </DropdownMenu>

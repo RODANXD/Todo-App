@@ -7,6 +7,7 @@ import TaskModal from "./task-modal"
 import ColumnModal from "./column-modal"
 import { Button } from "../components/ui/button"
 import { PlusCircle, Save, RotateCcw, MoreHorizontal, Plus } from "lucide-react"
+import { deleteTask } from "../api/AxiosAuth"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../components/ui/dropdown-menu"
 
 export default function KanbanBoard({ projectId, taskListId }) {
@@ -17,6 +18,7 @@ export default function KanbanBoard({ projectId, taskListId }) {
   const [editingColumn, setEditingColumn] = useState(null)
   const [draggedTask, setDraggedTask] = useState(null)
   const [dragOverColumnId, setDragOverColumnId] = useState(null)
+
 
   // Debug logs
   useEffect(() => {
@@ -124,10 +126,10 @@ export default function KanbanBoard({ projectId, taskListId }) {
           </Button>
         </div>
         <div className="flex gap-2">
-          {/* <Button onClick={saveData} variant="outline" className="flex items-center gap-2">
+          <Button onClick={saveData} variant="outline" className="flex items-center gap-2">
             <Save className="h-4 w-4" />
             Save Project
-          </Button> */}
+          </Button>
           {/* <Button onClick={loadData} variant="outline" className="flex items-center gap-2">
             <RotateCcw className="h-4 w-4" />
             Load Project

@@ -52,6 +52,8 @@ export const AuthContextP = ({ children }) => {
         initializeAuth();
     }, []);
 
+    
+
     const login = async (accessToken, refreshToken) => {
         try {
             const decodedToken = jwtDecode(accessToken);

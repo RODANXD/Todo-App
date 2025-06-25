@@ -171,7 +171,7 @@ export function KanbanProvider({ children, tasks=[], filters, sortBy }) {
 
   const addTask = (taskData) => {
     const newTask = {
-      id: crypto.randomUUID(),
+      id: getUUID(),
       ...taskData,
     };
     dispatch({ type: "ADD_TASK", task: newTask });
@@ -280,4 +280,16 @@ export function useKanban() {
     throw new Error("useKanban must be used within a KanbanProvider");
   }
   return context;
+}
+
+function getUUID() {
+  if (typeof crypto !== "undefined" && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function (c) {
+    const r = (Math.random() * 16) | 0,
+      v = c === "x" ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
 }

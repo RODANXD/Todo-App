@@ -12,3 +12,4 @@ django-filter==23.5  # or your preferred version
 Pillow==10.1.0  # Or latest stable version
 channels
 PyJWT
+djangorestframework-nested==0.95.0

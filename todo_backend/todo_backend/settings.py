@@ -129,7 +129,7 @@ EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'mansiankush56@gmail.com'
 EMAIL_HOST_PASSWORD = 'gvea ywtr apmk uauy'
 DEFAULT_FROM_EMAIL = 'mansiankush56@gmail.com'
-FRONTEND_URL = 'http://localhost:5173'
+FRONTEND_URL = 'http://localhost:5181'
 
 
 
@@ -149,7 +149,7 @@ CHANNEL_LAYERS = {
 
 
 CSRF_TRUSTED_ORIGINS = [
-    "http://localhost:5173",  # Your frontend URL
+    "http://localhost:5181",  # Your frontend URL
 ]
 
 
@@ -197,10 +197,11 @@ STATIC_URL = 'static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 # CORS settings
+
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173",
+    "http://localhost:5181",
     # "http://127.0.0.1:5173",
-    'http://116.202.210.102',
+    "http://116.202.210.102:5181",
     "https://3njncz1t-5173.inc1.devtunnels.ms",
     "https://3njncz1t-8000.inc1.devtunnels.ms"
     

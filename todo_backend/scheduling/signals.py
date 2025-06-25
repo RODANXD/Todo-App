@@ -1,4 +1,4 @@
-from django.db.models.signals import post_save, pre_save
+from django.db.models.signals import post_save, pre_save, post_delete
 from django.dispatch import receiver
 from django.utils import timezone
 from django.core.mail import send_mail
@@ -34,7 +34,17 @@ def create_task_calendar_event(sender, instance, created, **kwargs):
             calendar_event.start_time = instance.due_date
             calendar_event.end_time = instance.due_date
             calendar_event.save()
-
+            
+            
+            
+@receiver(post_delete, sender=Task)
+def delete_task_calendar_event(sender, instance, **kwargs):
+    """Delete calendar event when a task is deleted"""
+    CalendarEvent.objects.filter(task=instance).delete()
+    
+    
+    
+    
 @receiver(post_save, sender=CalendarEvent)
 def create_event_notifications(sender, instance, created, **kwargs):
     """Create notifications for calendar events"""

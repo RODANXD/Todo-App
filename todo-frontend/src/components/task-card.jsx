@@ -12,7 +12,7 @@ import { deleteTask } from "../api/AxiosAuth"
 
 
 export default function TaskCard({ task, onEdit, isDragging = false, onDragStart, onDragEnd, onDelete }) {
-  const { deleteTask } = useKanban()
+  // const { deleteTask } = useKanban()
 
   const getPriorityColor = (priority) => {
     switch (priority) {
@@ -27,20 +27,27 @@ export default function TaskCard({ task, onEdit, isDragging = false, onDragStart
     }
   }
 
-  const handleDelete = async () =>{
-    if (window.confirm("Are you sure you want to delete this task?")) {
-      try{
-        await deleteTask(task.id);
-        deleteTask(task.id);
-        toast.success("Task deleted successfully");
-        window.location.reload();
-      } catch (error){
-        console.error("Error deleting task:", error);
-        toast.error("Error deleting task"+ error.message);
-      }
-  }
-}
+  console.log("TaskCard - Task ID:", task)
+//   const handleDelete = async () =>{
+//     if (window.confirm("Are you sure you want to delete this task?")) {
+//       try{
+//         await deleteTask(task.id);
+//         console.log("taskid",task.id)
+//         deleteTask(task.id);
+//         toast.success("Task deleted successfully");
+//         window.location.reload();
+//       } catch (error){
+//         console.error("Error deleting task:", error);
+//         toast.error("Error deleting task"+ error.message);
+//       }
+//   }
+// }
 
+const formatdate = (date) => {
+  if (!date) return "No due date";
+  const formattedDate = date.split("T")[0]; // Extract the date part (YYYY-MM-DD)
+  return formattedDate || "No due date";
+}
   return (
     <Card
       draggable
@@ -64,7 +71,7 @@ export default function TaskCard({ task, onEdit, isDragging = false, onDragStart
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem onClick={onEdit}>Edit</DropdownMenuItem>
-              <DropdownMenuItem onClick={handleDelete} className="text-red-600">
+              <DropdownMenuItem onClick={onDelete} className="text-red-600">
                 Delete
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -80,7 +87,7 @@ export default function TaskCard({ task, onEdit, isDragging = false, onDragStart
         <div className="flex justify-between items-center mt-3 text-xs text-muted-foreground">
           <div className="flex items-center">
             <Calendar className="h-3 w-3 mr-1" />
-            {formatDate(task.dueDate)}
+            {formatdate(task.due_date)}
           </div>
           <div className="flex items-center">
             <User className="h-3 w-3 mr-1" />

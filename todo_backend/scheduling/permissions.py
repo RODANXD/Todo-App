@@ -1,6 +1,6 @@
 from rest_framework import permissions
 
-class CanManageCalendarEvent(permissions.BasePermission):
+class Manageventparticipants(permissions.BasePermission):
     """Custom permission to check if user can manage calendar events."""
 
     def has_permission(self, request, view):

@@ -116,7 +116,7 @@ export default function TaskModal({ isOpen, onClose, task, projectId, taskListId
       const updateResponse = await updateTask(task.id, taskData);
       onClose()
       // updateTaskInState({ ...taskData, id: task.id })
-      // console.log("Task updated:", updateResponse.data)
+      console.log("Task updated:", updateResponse.data)
       toast.success("Task updated successfully");
       alert("task updated successfully")
       window.location.reload();
