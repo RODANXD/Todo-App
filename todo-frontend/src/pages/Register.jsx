@@ -3,11 +3,18 @@ import { useNavigate } from 'react-router-dom';
 import axiosinstance from '../api/AxiosAuth';
 import background from '../assets/background.jpg';
 import loginbg from '../assets/loginbg.webp';
-
+import { toast } from "sonner";
+import {Eye, EyeOff} from "lucide-react"
+import { Button } from '../components/ui/button';
 
 
 
 export default function Register() {
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const [touch, setTouch] = useState(false);
+
+
     const [form, setForm] = useState({
         first_name: '',
         last_name: '',
@@ -27,17 +34,31 @@ export default function Register() {
         console.log('Form data being sent:', form); // Debugging form data
         try {
             await axiosinstance.post('auth/register/', form);
-            alert('Registration successful');
+            toast.success("Registration successful! Please log in.");
             navigate('/login');
         } catch (error) {
+            toast.error("Registration failed.");
             console.error('Registration failed:', error.response || error); // Log full error
             if (error.response) {
-                alert(`Registration failed: ${error.response.data.detail || 'Please check your input'}`);
+                toast.error(`Registration failed: ${error.response.data.detail || 'Please check your input'}`);
+                // alert(`Registration failed: ${error.response.data.detail || 'Please check your input'}`);
             } else {
-                alert('Registration failed. Please check your connection.');
+                toast.error("Registration failed. Please check your connection.");
+                // alert('Registration failed. Please check your connection.');
             }
         }
     };
+
+    const HandleConfirmpassword = (e) => {
+        if (form.password !== form.password_confirm) {
+            toast.error("Passwords do not match");
+            // alert("Passwords do not match");
+            return false;
+        }
+        return true;
+    };
+  const passwordmatch = form.password===form.password_confirm;
+
 
     return (
         <div className="min-h-screen flex items-center justify-center p-2">
@@ -96,25 +117,56 @@ export default function Register() {
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                            <div className='flex items-center '>
                             <input
-                                type="password"
+                                type={showCurrentPassword ? "text" : "password"}
                                 name="password"
                                 onChange={handleChange}
                                 className="w-full bg-gray-100 p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
                                 placeholder="Enter your password"
                                 required
                             />
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className=" relative right-8 h-6 w-1 p-0"
+                                onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                            >
+                                {showCurrentPassword ? <EyeOff className=" w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                            </Button>
+                            </div>
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">Confirm Password</label>
+                            <div className='flex items-center '>
                             <input
-                                type="password"
+                                type={showConfirmPassword?"text":"password"}
                                 name="password_confirm"
                                 onChange={handleChange}
                                 className="w-full bg-gray-100 p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
                                 placeholder="Confirm your password"
                                 required
                             />
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className=" relative right-8 h-6 w-1 p-0"
+                                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                            >
+                                {showConfirmPassword ? <EyeOff className=" w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                            </Button>
+                        </div>
+                        {form.password_confirm && (
+    <p
+      className={`text-sm mt-1 ${
+        passwordmatch ? "text-green-600" : "text-red-500"
+      }`}
+    >
+      {passwordmatch ? "✅ Passwords match" : "❌ Passwords do not match"}
+    </p>
+  )}
                         </div>
                         <button
                             type="submit"

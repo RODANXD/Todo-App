@@ -1,11 +1,13 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo, useCallback } from "react"
 import { useKanban } from "./kanban-provider"
 import { Button } from "../components/ui/button"
 import { Input } from "../components/ui/input"
 import { Textarea } from "../components/ui/textarea"
-import { toast } from "react-hot-toast";
+// import { toast } from "react-hot-toast";
+import { toast } from "sonner";
+
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select"
 import { Label } from "../components/ui/label"
@@ -28,6 +30,7 @@ export default function TaskModal({ isOpen, onClose, task, projectId, taskListId
   const [assignee, setAssignee] = useState("")
   const [projectMembers, setProjectMembers] = useState([]);
   const [dependency, setDependency] = useState([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
 
   useEffect(() => {
@@ -104,13 +107,15 @@ export default function TaskModal({ isOpen, onClose, task, projectId, taskListId
     // task_list: taskListId,
   }
 
-  console.log("=== TASK CREATION DEBUG ===")
-  console.log("Task Data being sent:", taskData)
-  console.log("Project ID:", projectId, "Type:", typeof projectId)
-  console.log("Task List ID:", taskListId, "Type:", typeof taskListId)
-  console.log("==========================")
+  // console.log("=== TASK CREATION DEBUG ===")
+  // console.log("Task Data being sent:", taskData)
+  // console.log("Project ID:", projectId, "Type:", typeof projectId)
+  // console.log("Task List ID:", taskListId, "Type:", typeof taskListId)
+  // console.log("==========================")
   
   try {
+    if (isSubmitting) return;
+      setIsSubmitting(true);
     if (task) {
       console.log("task.id: ", task.id)
       const updateResponse = await updateTask(task.id, taskData);
@@ -118,8 +123,8 @@ export default function TaskModal({ isOpen, onClose, task, projectId, taskListId
       // updateTaskInState({ ...taskData, id: task.id })
       console.log("Task updated:", updateResponse.data)
       toast.success("Task updated successfully");
-      alert("task updated successfully")
-      window.location.reload();
+      // alert("task updated successfully")
+      // window.location.reload();
     } else {
       const response = await createTaskWithList(taskData)
       // addTask({ 
@@ -133,11 +138,12 @@ export default function TaskModal({ isOpen, onClose, task, projectId, taskListId
        if (response.data) {
         addTask(response.data);
         toast.success("Task created successfully");
-        window.location.reload();
+        // window.location.reload();
+        onClose();
       }
       
       alert("Task created sucessfully")
-      window.location.reload()
+      // window.location.reload()
     }
     onClose()
   } catch (error) {
@@ -153,6 +159,9 @@ export default function TaskModal({ isOpen, onClose, task, projectId, taskListId
     const errorMessage = error.response?.data?.detail || error.message;
     toast.error(`Error: ${errorMessage}`);
     console.error("Error saving task:", error);
+  }
+  finally {
+    setIsSubmitting(false);
   }
 }
   return (
@@ -257,7 +266,7 @@ export default function TaskModal({ isOpen, onClose, task, projectId, taskListId
           <Button variant="outline" onClick={onClose}>
             Cancel
           </Button>
-          <Button onClick={handleSubmit}>{task ? "Update Task" : "Create Task"}</Button>
+          <Button onClick={handleSubmit} disabled={isSubmitting}>{task ? "Update Task" : "Create Task"}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

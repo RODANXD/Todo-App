@@ -6,7 +6,6 @@ import './index.css';
 import { BrowserRouter } from 'react-router-dom';
 import { AuthContextP } from './store/AuthContext.jsx';
 
-
 ReactDOM.createRoot(document.getElementById('root')).render(
   <BrowserRouter>
     <AuthContextP>

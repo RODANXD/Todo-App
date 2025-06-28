@@ -1,8 +1,10 @@
 "use client";
 import { useRef } from "react";
 import { createContext, useContext, useReducer, useEffect } from "react";
-import { toast } from "react-hot-toast";
+// import { toast } from "react-hot-toast";
+import { toast } from "sonner";
 import { getTaskLists } from "../api/AxiosAuth";
+import { updateTaskPriority } from "../api/AxiosAuth";
 
 const defaultColumns = [
   { id: "todo", title: "To Do", color: "bg-blue-500" },
@@ -178,10 +180,10 @@ export function KanbanProvider({ children, tasks=[], filters, sortBy }) {
     toast.success("Task added successfully");
   };
 
-  const updateTask = (task) => {
-    dispatch({ type: "UPDATE_TASK", task });
-    toast.success("Task updated successfully");
-  };
+  // const updateTask = (task) => {
+  //   dispatch({ type: "UPDATE_TASK", task });
+  //   toast.success("Task updated successfully");
+  // };
 
   const deleteTask = (taskId) => {
     dispatch({ type: "DELETE_TASK", taskId });
@@ -203,7 +205,7 @@ export function KanbanProvider({ children, tasks=[], filters, sortBy }) {
     const columnTitle =
       state.columns.find((c) => c.id === destinationColumn)?.title ||
       destinationColumn;
-    toast.success(`Task moved to ${columnTitle}`);
+    toast.success(`Task moved to ${columnTitle}, Please save the project`);
   };
 
   const addColumn = (columnData) => {
@@ -235,10 +237,15 @@ export function KanbanProvider({ children, tasks=[], filters, sortBy }) {
     toast.success("Column deleted successfully");
   };
 
-  const saveData = () => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem("kanban-data", JSON.stringify(state));
-      toast.success("Project data saved successfully");
+  const saveData = async () => {
+    try{
+      await Promise.all(
+        state.tasks.map(task=> updateTaskPriority(task.id,task.status))
+      )
+      toast.success("All Tasks saved")
+    }
+    catch(error){
+      toast.error("Failed to Save tasks"+ error.message)
     }
   };
 
@@ -259,7 +266,7 @@ export function KanbanProvider({ children, tasks=[], filters, sortBy }) {
       value={{
         state,
         addTask,
-        updateTask,
+        updateTaskPriority,
         deleteTask,
         moveTask,
         addColumn,

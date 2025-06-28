@@ -1,5 +1,5 @@
 "# Todo-Application" 
-to connect the sockets use- "daphne todo_backend.asgi:application"
+to connect the sockets use- " daphne -b 0.0.0.0 -p 6969 todo_backend.asgi:application"
 -having a small chat system
 -Task creation 
 -project creation

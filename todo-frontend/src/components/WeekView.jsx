@@ -1,8 +1,16 @@
 import { format, addDays, startOfWeek, isSameDay } from "date-fns"
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card"
 import { Badge } from "./ui/badge"
-
-export default function WeekView({ selectedDate, events, onEventDrag }) {
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "./ui/dialog"
+import { getCalendarEvents, createEvent, updateEvent, deleteEvent, addParticipant } from "../api/AxiosAuth"
+import { Input } from "./ui/input"
+import { Label } from "./ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select"
+import { Button } from "./ui/button"
+import { useState } from "react"
+import { toast } from "sonner"
+export default function WeekView({ selectedDate, events, onEventDrag, projects = [], onUpdateEvent, onDeleteEvent }) {
+  const [selectedEvent, setSelectedEvent] = useState(null);
   const weekStart = startOfWeek(selectedDate)
   const weekDays = Array.from({ length: 7 }).map((_, i) => addDays(weekStart, i))
 
@@ -28,6 +36,66 @@ export default function WeekView({ selectedDate, events, onEventDrag }) {
       onEventDrag(eventId, date)
     }
   }
+    const fetchEvents = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        let start, end;
+        if (view === 'month') {
+          start = startOfMonth(currentMonth);
+          end = endOfMonth(currentMonth);
+        } else if (view === 'week') {
+          start = startOfWeek(selectedDate);
+          end = endOfWeek(selectedDate);
+        } else {
+          start = selectedDate;
+          end = selectedDate;
+        }
+        
+        const response = await getCalendarEvents(
+          format(start, 'yyyy-MM-dd'),
+          format(end, 'yyyy-MM-dd')
+        );
+        setEvents(Array.isArray(response.data) ? response.data : response.data.results || []);
+      } catch (err) {
+        setError('Failed to fetch events');
+        toast.error('Failed to fetch events');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    const handleDeleteEvent = async (eventId) => {
+      try {
+        await deleteEvent(eventId);
+        toast.success("Event deleted");
+        alert("Event deleted successfully");
+        setSelectedEvent(null);
+        fetchEvents();
+      } catch (error) {
+        toast.error("Failed to delete event");
+      }
+    };
+  
+  const handleUpdateEvent = async () => {
+    if (!selectedEvent) return;
+    try {
+      await updateEvent(selectedEvent.id, {
+        title: selectedEvent.title,
+        description: selectedEvent.description,
+        event_type: selectedEvent.type || selectedEvent.event_type,
+        start_time: selectedEvent.start_time,
+        end_time: selectedEvent.end_time,
+        location: selectedEvent.location,
+        project: selectedEvent.project,
+      });
+      toast.success("Event updated");
+      setSelectedEvent(null);
+      fetchEvents();
+    } catch (error) {
+      toast.error("Failed to update event");
+    }
+  };
 
   return (
     <Card>
@@ -40,7 +108,7 @@ export default function WeekView({ selectedDate, events, onEventDrag }) {
             <div
               key={day.toString()}
               className="border rounded-lg p-4 min-h-[200px]"
-              onDragOver={handleDragOver}
+              // onDragOver={handleDragOver}
               onDrop={(e) => handleDrop(e, day)}
             >
               <div className="font-medium">{format(day, 'EEE')}</div>
@@ -50,8 +118,9 @@ export default function WeekView({ selectedDate, events, onEventDrag }) {
                   <div
                     key={event.id}
                     draggable
-                    onDragStart={(e) => handleDragStart(e, event)}
-                    className={`p-2 text-sm rounded-md cursor-move ${
+                    onClick={() => setSelectedEvent(event)}
+                    // onDragStart={(e) => handleDragStart(e, event)}
+                    className={`p-2 text-sm rounded-md cursor-pointer ${
                       event.type === 'task' ? 'bg-blue-100': event.event_type === 'milestone' ? 'bg-green-100':'bg-purple-100'
                     }`}
                   >
@@ -73,6 +142,75 @@ export default function WeekView({ selectedDate, events, onEventDrag }) {
             </div>
           ))}
         </div>
+        {selectedEvent && (
+  <Dialog open={!!selectedEvent} onOpenChange={open => { if (!open) setSelectedEvent(null); }}>
+    <DialogContent className="gap-0">
+      <DialogHeader>
+        <DialogTitle>{selectedEvent.title}</DialogTitle>
+      </DialogHeader>
+      <div className="grid gap-2 py-4">
+        <div className="grid gap-2">
+          <Label htmlFor="title">{selectedEvent.description}</Label>
+          <Input
+            id="title"
+            value={selectedEvent.title}
+            onChange={(e) => setSelectedEvent({ ...selectedEvent, title: e.target.value })}
+          />
+        </div>
+        <div className="grid gap-2">
+          <Label htmlFor="date">Started Date</Label>
+          <Input
+            id="date"
+            type="date"
+            value={selectedEvent.start_time ? format(new Date(selectedEvent.start_time), "yyyy-MM-dd") : ""}
+            onChange={(e) => setSelectedEvent({ ...selectedEvent, start_time: new Date(e.target.value).toISOString() })}
+          />
+        </div>
+        <div className="grid gap-2">
+          <Label htmlFor="type">Type</Label>
+          <Select
+            value={selectedEvent.event_type}
+            onValueChange={(value) => setSelectedEvent({ ...selectedEvent, event_type: value })}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="task">Task</SelectItem>
+              <SelectItem value="milestone">Milestone</SelectItem>
+              <SelectItem value="meeting">Meeting</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="grid gap-2">
+          <Label htmlFor="description">Description</Label>
+          <Input
+            id="description"
+            value={selectedEvent.description}
+            onChange={(e) => setSelectedEvent({ ...selectedEvent, description: e.target.value })}
+            placeholder="Event description"
+          />
+        </div>
+      </div>
+      <DialogFooter>
+        <Button variant="outline" onClick={() => setSelectedEvent(null)}>
+          Cancel
+        </Button>
+        <Button
+          onClick={handleUpdateEvent}
+        >
+          Update Event
+        </Button>
+        <Button
+          variant="destructive"
+          onClick={handleDeleteEvent}
+        >
+          Delete Event
+        </Button>
+      </DialogFooter>
+    </DialogContent>
+  </Dialog>
+)}
       </CardContent>
     </Card>
   )

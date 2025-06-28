@@ -122,3 +122,12 @@ def forgot_pass(request):
     )
     
     return Response({"message": "New password has been sent to your email"}, status=status.HTTP_200_OK)
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def all_user_emails(request):
+    User = get_user_model()
+    users = User.objects.all()
+    emails = [user.email for user in users]
+    return Response(emails, status=status.HTTP_200_OK)

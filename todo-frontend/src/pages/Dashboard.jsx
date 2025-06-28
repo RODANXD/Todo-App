@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo, useCallback } from "react"
 import { useauth } from "../store/AuthContext"
 import { useNavigate } from "react-router-dom"
 import { getProjects, getTasksByProject, getTaskStats, updateProject } from "../api/AxiosAuth"
@@ -12,41 +12,13 @@ import { Input } from "../components/ui/input"
 import { Button } from "../components/ui/button"
 import { Textarea } from "../components/ui/textarea"
 import { createProject, deleteProject } from "../api/AxiosAuth"
-import {
-  MoreHorizontal,
-  Plus,
-  Users,
-  Calendar,
-  BarChart3,
-  MessageSquare,
-  LogOut,
-  Filter,
-  X,
-  Search,
-  Bell,
-  Settings,
-  Folder,
-  Clock,
-  Target,
-} from "lucide-react"
+import {MoreHorizontal,Plus,Users,Calendar,BarChart3,MessageSquare,LogOut,Filter,X,Search,Bell,Settings,Folder,Clock,Target,} from "lucide-react"
+import { toast } from "sonner";
+import { Switch } from "../components/ui/switch"
 import ChatInterface from "../components/ChatInterface"
 import ChatErrorBoundary from "../components/Chat-boundary"
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "../components/ui/dialog"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "../components/ui/dropdown-menu"
+import {Dialog,DialogClose,DialogContent,DialogDescription,DialogFooter,DialogHeader,DialogTitle,DialogTrigger,} from "../components/ui/dialog"
+import {  DropdownMenu,  DropdownMenuContent,  DropdownMenuItem,  DropdownMenuTrigger,} from "../components/ui/dropdown-menu"
 import { createTaskList, duplicateproject } from "../api/AxiosAuth"
 import { Label } from "../components/ui/label"
 import TaskModal from "../components/task-modal"
@@ -55,6 +27,7 @@ import { Badge } from "../components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "../components/ui/avatar"
 import { Separator } from "../components/ui/separator"
 import SettingsProfile from "../components/Profilesetting"
+import { formatDistanceToNow } from "date-fns";
 
 const Dashboard = () => {
   const [projects, setProjects] = useState([])
@@ -76,6 +49,7 @@ const Dashboard = () => {
   const [showFilters, setShowFilters] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
   const [showSettings, setShowSettings] = useState(false)
+  
 
   const navigate = useNavigate()
 
@@ -115,6 +89,10 @@ const Dashboard = () => {
         setTasks([])
         return
       }
+    const currentProjectTasks = tasks.filter(task => task.project === selectproject.id)
+    if (currentProjectTasks.length > 0 && tasks.length > 0) {
+      return // Already have tasks for this project
+    }
 
       try {
         setLoading(true)
@@ -133,46 +111,106 @@ const Dashboard = () => {
     }
 
     fetchTaskLists()
-  }, [selectproject])
+  }, [selectproject?.id])
+
+
+const [tasksByProject, setTasksByProject] = useState({}) // Cache tasks by project ID
+
+const fetchTasksForProject = async (projectId) => {
+  // Check cache first
+  if (tasksByProject[projectId]) {
+    setTasks(tasksByProject[projectId])
+    return
+  }
+
+  try {
+    setLoading(true)
+    const response = await getTasksByProject(projectId)
+    const taskListsData = response.data.results || response.data
+    const tasksArray = Array.isArray(taskListsData) ? taskListsData : [taskListsData]
+    const filteredTask = tasksArray.filter((task) => task.project === projectId)
+    
+    // Cache the tasks
+    setTasksByProject(prev => ({
+      ...prev,
+      [projectId]: filteredTask
+    }))
+    setTasks(filteredTask)
+    setError(null)
+  } catch (error) {
+    console.error("Error fetching task lists:", error)
+    setError("Failed to load task lists. Please try again.")
+  } finally {
+    setLoading(false)
+  }
+}
 
   useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const response = await getTaskStats()
-        setStats(response.data)
-      } catch (error) {
-        console.error("Error fetching stats:", error)
-      }
-    }
-
-    fetchStats()
-  }, [selectproject])
-
-  const onSelect = async (proj) => {
+  const fetchStats = async () => {
     try {
-      setSelectProject(proj)
-      setTasks([])
-      await new Promise((resolve) => setTimeout(resolve, 0))
-
-      if (!proj.task_lists?.length) {
-        const taskListId = await ensureTaskList(proj.id)
-        const updatedProj = {
-          ...proj,
-          task_lists: [
-            {
-              id: taskListId,
-              name: "Default Task List",
-              project: proj.id,
-            },
-          ],
-        }
-        setSelectProject(updatedProj)
-      }
+      const response = await getTaskStats()
+      setStats(response.data)
     } catch (error) {
-      console.error("Error in project selection:", error)
-      setError(`Error selecting project: ${error.message}`)
+      console.error("Error fetching stats:", error)
     }
   }
+
+  fetchStats()
+}, [])
+
+  useEffect(() => {
+  if (projects.length > 0 && !selectproject) {
+    setSelectProject(projects[0]);
+  }
+}, [projects, selectproject]);
+
+const onSelect = async (proj) => {
+  try {
+    // Only proceed if it's a different project
+    if (selectproject?.id === proj.id) {
+      return
+    }
+
+    setSelectProject(proj)
+    
+    // Fetch tasks for the new project (will use cache if available)
+    await fetchTasksForProject(proj.id)
+    
+    // Handle task list creation if needed
+    if (!proj.task_lists?.length) {
+      const taskListId = await ensureTaskList(proj.id)
+      const updatedProj = {
+        ...proj,
+        task_lists: [
+          {
+            id: taskListId,
+            name: "Default Task List",
+            project: proj.id,
+          },
+        ],
+      }
+      setSelectProject(updatedProj)
+    }
+  } catch (error) {
+    console.error("Error in project selection:", error)
+    setError(`Error selecting project: ${error.message}`)
+  }
+}
+const [isSelectingProject, setIsSelectingProject] = useState(false)
+
+const onSelectWithLoadingState = async (proj) => {
+  if (isSelectingProject || selectproject?.id === proj.id) {
+    return
+  }
+
+  setIsSelectingProject(true)
+  try {
+    await onSelectOptimized(proj)
+  } finally {
+    setIsSelectingProject(false)
+  }
+}
+  
 
   const ensureTaskList = async (projectId) => {
     try {
@@ -229,8 +267,9 @@ const Dashboard = () => {
           setTasks([])
         }
 
-        alert("Project deleted successfully")
-        window.location.reload()
+        toast.success("Project deleted successfully")
+        // alert("Project deleted successfully")
+        // window.location.reload()
       } catch (error) {
         console.error("Error deleting project:", error)
       }
@@ -243,11 +282,11 @@ const Dashboard = () => {
       const response = await duplicateproject(projectId)
       const newProject = response.data
       setProjects([...projects, newProject])
-      alert("Project duplicated successfully")
-      window.location.reload()
+      toast.success("Project duplicated successfully")
     } catch (error) {
       console.error("Error duplicating project:", error)
-      alert("Failed to duplicate project: " + error.message)
+      toast.error("Failed to duplicate project: " + error.message)
+      // alert("Failed to duplicate project: " + error.message)
     }
   }
 
@@ -301,7 +340,7 @@ const Dashboard = () => {
         setName("")
         setDescription("")
         setorganization("")
-        window.location.reload()
+        // window.location.reload()
       }
       onClose()
     } catch (error) {
@@ -317,11 +356,13 @@ const Dashboard = () => {
     setorganization("")
   }
 
-  const filteredProjects = projects.filter(
+const filteredProjects = useMemo(() => {
+  return projects.filter(
     (project) =>
       project.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       project.description?.toLowerCase().includes(searchQuery.toLowerCase()),
   )
+}, [projects, searchQuery])
 
   if (loading && !projects.length) {
     return (
@@ -420,6 +461,10 @@ const Dashboard = () => {
               </Button>
 
               <Separator orientation="vertical" className="h-6" />
+              <div className="flex items-center space-x-2">
+      <Switch id="airplane-mode" />
+      <Label htmlFor="airplane-mode" className="text-xs">Dark Mode</Label>
+    </div>
 
               <Button variant="ghost" size="sm" className="text-slate-600 hover:text-slate-800 hover:bg-slate-100">
                 <Bell className="w-4 h-4" />
@@ -599,7 +644,9 @@ const Dashboard = () => {
                                 </Badge>
                                 <div className="flex items-center space-x-1 text-xs text-slate-500">
                                   <Clock className="w-3 h-3" />
-                                  <span>Updated 2h ago</span>
+                                  <span>
+                                    Updated {proj.updated_at ? formatDistanceToNow(new Date(proj.updated_at), { addSuffix: true }) : "N/A"}
+                                  </span>
                                 </div>
                               </div>
                             </div>
@@ -704,6 +751,8 @@ const Dashboard = () => {
               <CardContent className="p-6 pt-0">
                 {/* Chat Interface */}
                 {isChatOpen && (
+                  <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+            <div className="rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden">
                   <Card className="mb-6 border-slate-200">
                     <CardContent className="p-4">
                       <ChatErrorBoundary>
@@ -721,6 +770,9 @@ const Dashboard = () => {
                       </ChatErrorBoundary>
                     </CardContent>
                   </Card>
+                  </div>
+                  </div>
+                  
                 )}
 
                 {/* Enhanced Filters */}
@@ -790,8 +842,9 @@ const Dashboard = () => {
                           type="date"
                           value={filters.dueDate}
                           onChange={(e) => setFilters((prev) => ({ ...prev, dueDate: e.target.value }))}
-                          className="focus:border-blue-300 focus:ring-blue-200"
+                          className="bg-white w-32 focus:border-blue-300 focus:ring-blue-200"
                           placeholder="Due date"
+                          
                         />
 
                         <Button

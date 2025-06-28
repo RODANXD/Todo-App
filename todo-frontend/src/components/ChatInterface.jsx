@@ -8,6 +8,8 @@ import { ScrollArea } from "./ui/scroll-area";
 import { Separator } from "./ui/separator";
 import { Send, X, Users, Smile, Paperclip, MoreVertical } from "lucide-react";
 import { useWebSocket } from "../hooks/ChatWebhook";
+import data from "@emoji-mart/data";
+import Picker from "@emoji-mart/react";
 
 const ChatInterface = ({ projectId, currentUser, onClose }) => {
   const [chatRoomId, setChatRoomId] = useState(null);
@@ -23,6 +25,8 @@ const ChatInterface = ({ projectId, currentUser, onClose }) => {
   const [isTyping, setIsTyping] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
   const [messageback,setMessagesback] = useState([]);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  
   // Only create WebSocket connection when we have a chatRoomId
   const { socket, isConnected } = useWebSocket(
     chatRoomId ? `/ws/chat/1/` : null
@@ -87,7 +91,7 @@ const ChatInterface = ({ projectId, currentUser, onClose }) => {
       });
       const data = await response.json();
       setMessagesback(data); 
-      console.log("message data", data)// Set initial messages from backend
+      console.log("message data q", data)// Set initial messages from backend
     } catch (error) {
       console.error('Error fetching chat messages:', error);
     }
@@ -96,8 +100,12 @@ const ChatInterface = ({ projectId, currentUser, onClose }) => {
 }, [projectId]);
   // Scroll to bottom function
   const scrollToBottom = useCallback(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, []);
+  const el = messagesEndRef.current;
+  if (el && el.scrollIntoView) {
+    el.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }
+}, []);
+
 
   // Fetch project users for mentions
   useEffect(() => {
@@ -125,7 +133,12 @@ const ChatInterface = ({ projectId, currentUser, onClose }) => {
     const handleMessage = (e) => {
       try {
         const data = JSON.parse(e.data);
-        setMessages(prevMessages => [...prevMessages, data]);
+
+        const normalized ={
+          ...data,
+          file: data.file && data.file.name && data.file.data ? data.file:null
+        }
+        setMessages(prevMessages => [...prevMessages, normalized]);
         console.log("message obj", data)
         scrollToBottom();
       } catch (error) {
@@ -144,6 +157,7 @@ const ChatInterface = ({ projectId, currentUser, onClose }) => {
       setError('Not connected. Please wait...');
       return;
     }
+
 
     if (!newMessage.trim() && !selectedFile) return;
 
@@ -167,10 +181,10 @@ const ChatInterface = ({ projectId, currentUser, onClose }) => {
         username: currentUser,
         file: filedata
       };
-      console.log("messageData",messageData)
       
       socket.send(JSON.stringify(messageData));
       
+      console.log("messageData : ",messageData)
       // setMessages(prev => [...prev, {
       //   ...messageData,
       //   timestamp: new Date().toISOString(),
@@ -198,6 +212,8 @@ const ChatInterface = ({ projectId, currentUser, onClose }) => {
       setShowMentions(false);
     }
   };
+
+  console.log("messages :============ ", messages)
   const handleFileUpload = async (messageId) => {
   if (!selectedFile) return;
   const formData = new FormData();
@@ -279,7 +295,7 @@ const handleFileChange = (e) => {
       )}
 
       {/* Messages Container */}
-      <ScrollArea className="flex-1 p-4">
+      <ScrollArea className="flex-1 p-4 overflow-y-auto h-[300px]">
         <div className="space-y-4">
           {/* Render messages */}
           {Array.isArray(messageback) && messageback.map((message, index) => (
@@ -310,7 +326,7 @@ const handleFileChange = (e) => {
                                     : 'bg-muted'
                 }`}>
                   {message.content}
-                  {message.attachments && message.attachments.length > 0 && (
+                  {/* {message.attachments && message.attachments.length > 0 && (
                     <div className="mt-2">
                       {message.attachments.map((attachment, idx) => (
                         <a 
@@ -324,11 +340,12 @@ const handleFileChange = (e) => {
                         </a>
                       ))}
                     </div>
-                  )}
+                  )} */}
                 </div>
               </div>
             </div>
           ))}
+          
 
           {messages.map((message, index) => (
             <div 
@@ -352,12 +369,31 @@ const handleFileChange = (e) => {
                 </div>
                 
                 <div className={`rounded-lg px-3 py-2 ${
-                  message.username === currentUser 
-                    ? 'bg-primary text-primary-foreground' 
-                    : 'bg-muted'
-                }`}>
-                  <p className="text-sm break-words">{message.message}</p>
-                </div>
+  message.username === currentUser 
+    ? 'bg-primary text-primary-foreground' 
+    : 'bg-muted'
+}`}>
+  {message.message && (
+    
+    <div>
+      <p className="text-sm break-words">{message.message}</p>
+    </div>
+  )}
+  {message.file && message.file.name && message.file.data && (
+  <div className="mt-2">
+    <a
+      href={`data:${message.file.type};base64,${message.file.data}`}
+      download={message.file.name}
+      className="text-sm text-primary underline"
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      {message.file.name}
+    </a>
+  </div>
+)}
+</div>
+                
               </div>
               
             </div>
@@ -419,6 +455,12 @@ const handleFileChange = (e) => {
   onClick={() => fileInputRef.current.click()}
 >
   <Paperclip className="h-4 w-4" />
+  {selectedFile && (
+    <div className="ml-2 flex items-center space-x-1">
+    <span className="text-xs text-muted-foreground">{selectedFile.name}</span>
+    </div>
+    
+  )}
   
 </Button>
           
@@ -426,24 +468,37 @@ const handleFileChange = (e) => {
             <Input
               value={newMessage}
               onChange={handleMessageInput}
-              onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
-              placeholder="Type @ to mention users..."
+              onKeyDown={(e) => {
+                if (e.key === 'Enter')
+                  {
+                    e.preventDefault();
+                    sendMessage()}
+                  }}
+              placeholder="Type message..."
               className="pr-12 bg-background"
               disabled={!isConnected}
             />
-            {selectedFile && (
-    <div className="ml-2 flex items-center space-x-1">
-    <span className="text-xs text-muted-foreground">{selectedFile.name}</span>
-    </div>
-    
-  )}
+            
             <Button 
               variant="ghost" 
               size="sm" 
               className="absolute right-1 top-1 h-6 w-6 p-0"
+              onClick={() => setShowEmojiPicker((prev) => !prev)}
+
             >
               <Smile className="h-4 w-4" />
             </Button>
+            {showEmojiPicker && (
+        <div className="absolute bottom-16 right-2 z-10">
+          <Picker
+            data={data}
+            onEmojiSelect={(emoji) =>
+              setNewMessage((prev) => prev + emoji.native)
+            }
+            theme="light"
+          />
+        </div>
+      )}
           </div>
           
           <Button

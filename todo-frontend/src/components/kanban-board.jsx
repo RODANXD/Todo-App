@@ -9,6 +9,7 @@ import { Button } from "../components/ui/button"
 import { PlusCircle, Save, RotateCcw, MoreHorizontal, Plus } from "lucide-react"
 import { deleteTask } from "../api/AxiosAuth"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../components/ui/dropdown-menu"
+import { updateTaskPriority } from "../api/AxiosAuth";
 
 export default function KanbanBoard({ projectId, taskListId }) {
   const { state, moveTask, saveData, loadData, deleteColumn } = useKanban()
@@ -120,10 +121,10 @@ export default function KanbanBoard({ projectId, taskListId }) {
             <PlusCircle className="h-4 w-4" />
             Add Task
           </Button>
-          <Button onClick={openCreateColumnModal} variant="outline" className="flex items-center gap-2">
+          {/* <Button onClick={openCreateColumnModal} variant="outline" className="flex items-center gap-2">
             <Plus className="h-4 w-4" />
             Add Column
-          </Button>
+          </Button> */}
         </div>
         <div className="flex gap-2">
           <Button onClick={saveData} variant="outline" className="flex items-center gap-2">
@@ -211,12 +212,12 @@ export default function KanbanBoard({ projectId, taskListId }) {
           </div>
         ))}
 
-        <div className="border border-dashed rounded-lg p-3 flex items-center justify-center min-w-[250px] max-w-[280px] min-h-[300px] flex-shrink-0 snap-start">
+        {/* <div className="border border-dashed rounded-lg p-3 flex items-center justify-center min-w-[250px] max-w-[280px] min-h-[300px] flex-shrink-0 snap-start">
           <Button variant="ghost" onClick={openCreateColumnModal} className="flex flex-col items-center p-8 h-auto">
             <Plus className="h-8 w-8 mb-2" />
             <span>Add Column</span>
           </Button>
-        </div>
+        </div> */}
       </div>
 
       <TaskModal 

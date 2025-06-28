@@ -3,11 +3,15 @@ import { useNavigate } from 'react-router-dom';
 import axiosinstance from '../api/AxiosAuth';
 import { useauth } from '../store/AuthContext';
 import loginbg from '../assets/loginbg.webp';
+import { toast } from "sonner";
+import { Button } from '../components/ui/button';
+import { Eye, EyeOff } from "lucide-react";
 
 export default function Login() {
     const [form, setForm] = useState({ email: '', password: '' });
     const [error, setError] = useState('');
     const [showForgotPassword, setShowForgotPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const navigate = useNavigate();
     const { login } = useauth();
 
@@ -22,14 +26,19 @@ export default function Login() {
             const response = await axiosinstance.post('auth/login/', form);
             if (response.data.access && response.data.refresh) {
                 await login(response.data.access, response.data.refresh);
+                toast.success("Login successful!");
                 navigate('/');
             } else {
+                toast.error("Invalid response from server");
                 setError('Invalid response from server');
             }
         } catch (error) {
             if (error.response) {
+
+                toast.error("Invalid credentials");
                 setError(error.response.data.detail || 'Invalid credentials');
             } else {
+                toast.error("Login failed. Please check your connection.");
                 setError('Login failed. Please check your connection.');
             }
         }
@@ -47,11 +56,11 @@ export default function Login() {
                         <h2 className="text-4xl font-bold text-gray-900">Holla, Welcome Back</h2>
                         <p className="text-gray-500 mt-2">Hey, welcome back to your special place</p>
                     </div>
-                    {error && (
+                    {/* {error && (
                         <div className="mb-4 p-3 text-sm text-red-600 bg-red-100 rounded-lg text-center">
                             {error}
                         </div>
-                    )}
+                    )} */}
                     <form onSubmit={handleLogin} className="space-y-4">
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
@@ -67,15 +76,27 @@ export default function Login() {
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                            <div className="flex items-center">
                             <input
-                                type="password"
+                                type={showConfirmPassword?"text":"password"}
                                 name="password"
                                 value={form.password}
                                 onChange={handleChange}
-                                className="w-full bg-gray-100 p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                className="w-full bg-gray-100 p-2 border border-gray-300 rounded-lg focus:outline-none"
                                 placeholder="Enter your password"
                                 required
                             />
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className=" relative right-8 h-6 w-1 p-0"
+                              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                            >
+                              {showConfirmPassword ? <EyeOff className=" w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                            </Button>
+
+                            </div>
                         </div>
                         <div className="flex items-center justify-between">
                             <div className="flex items-center">
@@ -141,7 +162,7 @@ function ForgotPasswordForm({ setShowForgotPassword }) {
                         name="email"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                        className="w-full bg-gray-100 p-2 border border-gray-300 rounded-lg focus:outline-none"
                         placeholder="Enter your email"
                         required
                     />

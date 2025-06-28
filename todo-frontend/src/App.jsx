@@ -10,6 +10,9 @@ import authService from './api/auth';
 import './App.css';
 import AnalyticsPage from './components/Analytics';
 import CalendarPage from './components/Calender'; 
+import { Toaster } from "sonner";
+
+
 
 const PrivateRoute = ({ children }) => {
   const user = authService.getCurrentUser();
@@ -19,6 +22,7 @@ const PrivateRoute = ({ children }) => {
 const App = () => {
   return (
     <AuthContextP>
+        <Toaster position="top-center" richColors />
       <KanbanProvider>
         <Routes>
           <Route path="/login" element={<Login />} />

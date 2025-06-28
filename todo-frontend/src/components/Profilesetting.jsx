@@ -933,10 +933,7 @@ fetchprofile();
                                   <Avatar className="w-8 h-8">
                                     <AvatarImage src={member.avatar || "/placeholder.svg"} />
                                     <AvatarFallback className="bg-blue-100 text-blue-600 text-sm">
-                                      {member.name
-                                        .split(" ")
-                                        .map((n) => n[0])
-                                        .join("")}
+                                      {member.name? member.name.split(" ").map((n) => n[0]).join(""): member.email? member.email[0].toUpperCase(): "U"}
                                     </AvatarFallback>
                                   </Avatar>
                                   <div>

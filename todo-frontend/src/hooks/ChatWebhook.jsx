@@ -1,4 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { toast } from "sonner";
+
 
 export const useWebSocket = (url) => {
     const [socket, setSocket] = useState(null);
@@ -17,6 +19,7 @@ export const useWebSocket = (url) => {
 
         const token = localStorage.getItem('access_token');
         if (!token) {
+            toast.error("No authentication token found. Please log in.");
             console.error("No authentication token found");
             return;
         }
@@ -55,6 +58,7 @@ export const useWebSocket = (url) => {
         };
 
         ws.onerror = (error) => {
+            toast.error("WebSocket error occurred. Attempting to reconnect...");
             console.error('WebSocket Error:', error);
         };
 

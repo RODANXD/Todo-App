@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Input } from "../components/ui/input"
 import { Label } from "../components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select"
-import { toast } from "react-hot-toast"
+import { toast } from "sonner";
 import GanttTimeline from "./GanttTimeline"
 import WeekView from "./WeekView"
 import { useNavigate } from "react-router-dom"
@@ -82,6 +82,40 @@ export default function CalendarPage() {
       setLoading(false);
     }
   };
+  const downloadTimesheetCSV = () => {
+  if (!events.length) {
+    toast.error("No events to export");
+    return;
+  }
+  const headers = [
+    "Title",
+    "Type",
+    "Project",
+    "Start Time",
+    "End Time",
+    "Description",
+    "Created By"
+  ];
+  const rows = events.map(event => [
+    `"${event.title || ""}"`,
+    `"${event.event_type || event.type || ""}"`,
+    `"${projects.find(p => p.id === (event.project?.id || event.project))?.name || event.project || ""}"`,
+    `"${event.start_time ? format(new Date(event.start_time), "yyyy-MM-dd HH:mm") : ""}"`,
+    `"${event.end_time ? format(new Date(event.end_time), "yyyy-MM-dd HH:mm") : ""}"`,
+    `"${event.description || ""}"`,
+    `"${event.created_by?.username || ""}"`
+  ]);
+  const csvContent = [headers, ...rows].map(e => e.join(",")).join("\n");
+  const blob = new Blob([csvContent], { type: "text/csv" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "timesheet.csv";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+};
 
   const handleAddEvent = async () => {
     try {
@@ -195,6 +229,9 @@ const handleUpdateEvent = async () => {
         <Button onClick={() => setIsEventModalOpen(true)}>
           <Plus className="mr-2 h-4 w-4" />
           Add Event
+        </Button>
+        <Button onClick={downloadTimesheetCSV} variant="outline">
+          Download Timesheet CSV
         </Button>
         <Button onClick={() => navigate("/")} >Back to dashboard</Button>
         </div>
@@ -421,8 +458,18 @@ const handleUpdateEvent = async () => {
         </TabsContent>
 
         <TabsContent value="week" className="mt-4">
-          <WeekView selectedDate={selectedDate} events={events} onEventDrag={handleDragEvent} />
+         <WeekView
+  selectedDate={selectedDate}
+  events={events}
+  onEventDrag={handleDragEvent}
+  projects={projects}
+  onUpdateEvent={handleUpdateEvent}
+  onDeleteEvent={handleDeleteEvent}
+/>
         </TabsContent>
+
+
+
 
         <TabsContent value="timeline" className="mt-4">
           <GanttTimeline />

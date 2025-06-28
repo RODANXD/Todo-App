@@ -38,7 +38,7 @@ axiosinstance.interceptors.response.use(
             } catch (refreshError) {
                 localStorage.removeItem('access_token');
                 localStorage.removeItem('refresh_token');
-                window.location.href = '/login';
+                // window.location.href = '/login';
                 return Promise.reject(refreshError);
             }
         }
@@ -159,12 +159,22 @@ export const updateTask = async (taskId, data) => {
       dependencies: Array.isArray(data.dependencies) ? data.dependencies : []
     };
 
-    return await axiosinstance.put(`/tasks/${taskId}/`, formattedData);
+    return await axiosinstance.patch(`/tasks/${taskId}/`, formattedData);
   } catch (error) {
     console.error("Update task error:", error.response?.data || error.message);
     throw error;
   }
 };
+
+
+export const updateTaskPriority = async (taskId, status) => {
+  try {
+    return await axiosinstance.patch(`/tasks/${taskId}/`, { status });
+  } catch (error) {
+    console.error("Update task priority error:", error.response?.data || error.message);
+    throw error;
+  }
+}
 
 export const deleteTask = (taskId) =>  axiosinstance.delete(`/tasks/${taskId}/`);
 export const getTaskDetails = (taskId) => axiosinstance.get(`/tasks/${taskId}/`);
@@ -205,6 +215,10 @@ export const logTime = async (taskId, duration) => {
 export const getTaskStats = async () => {
     return await axiosinstance.get('/tasks/stats/');
 };
+
+export const getAllEmails = async () =>{
+  return await axiosinstance.get('/auth/profile/all_user_emails/')
+}
 
 
 export const uploadChatAttachment = (projectId, formData) => {

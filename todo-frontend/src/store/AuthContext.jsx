@@ -59,7 +59,6 @@ export const AuthContextP = ({ children }) => {
             const decodedToken = jwtDecode(accessToken);
             localStorage.setItem('access_token', accessToken);
             localStorage.setItem('refresh_token', refreshToken);
-            
                        // Fetch profile data after successful login
             const profileResponse = await getProfile();
             const profileData = profileResponse.data;
