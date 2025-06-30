@@ -11,6 +11,8 @@ import './App.css';
 import AnalyticsPage from './components/Analytics';
 import CalendarPage from './components/Calender'; 
 import { Toaster } from "sonner";
+import { Accordion } from './components/ui/accordion';
+
 
 
 
@@ -52,7 +54,7 @@ const App = () => {
             }
           />
         </Routes>
-      </KanbanProvider>
+      </KanbanProvider> 
     </AuthContextP>
   );
 };

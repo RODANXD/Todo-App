@@ -79,6 +79,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         message = data['message']
         username = data['username']
         message_type = data.get('type', 'message')
+        file_data = data.get('file')
         
         if message_type == 'message':
             await self.save_msg(username, message)
@@ -90,7 +91,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 'type': 'chat_message',
                 'message': message,
                 'username': username,
-                'message_type': message_type
+                'message_type': message_type,
+                'file': file_data
             }
         )
 

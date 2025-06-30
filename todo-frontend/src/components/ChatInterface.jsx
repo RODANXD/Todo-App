@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback } from "./ui/avatar";
 import { Badge } from "./ui/badge";
 import { ScrollArea } from "./ui/scroll-area";
 import { Separator } from "./ui/separator";
-import { Send, X, Users, Smile, Paperclip, MoreVertical } from "lucide-react";
+import { Send, X, Users, Smile, Paperclip, MoreVertical, FileText, Download  } from "lucide-react";
 import { useWebSocket } from "../hooks/ChatWebhook";
 import data from "@emoji-mart/data";
 import Picker from "@emoji-mart/react";
@@ -129,23 +129,29 @@ const ChatInterface = ({ projectId, currentUser, onClose }) => {
   // Message handler
   useEffect(() => {
     if (!socket) return;
-
-    const handleMessage = (e) => {
-      try {
-        const data = JSON.parse(e.data);
-
-        const normalized ={
-          ...data,
-          file: data.file && data.file.name && data.file.data ? data.file:null
-        }
-        setMessages(prevMessages => [...prevMessages, normalized]);
-        console.log("message obj", data)
-        scrollToBottom();
-      } catch (error) {
-        console.error('Error handling message:', error);
-        setError("Error receiving message. Please try again.");
-      }
+const handleMessage = (e) => {
+  try {
+    const data = JSON.parse(e.data);
+    console.log("WebSocket message data:", data);
+    console.log("Available fields:", Object.keys(data));
+    
+    // Check for file in different possible field names
+    const fileData = data.file || data.attachment || data.attachments || data.file_data || data.media;
+    console.log("File data found:", fileData);
+    
+    const normalized = {
+      ...data,
+      file: fileData && fileData.name && fileData.data ? fileData : null
     };
+    
+    setMessages(prevMessages => [...prevMessages, normalized]);
+    console.log("Normalized message:", normalized);
+    scrollToBottom();
+  } catch (error) {
+    console.error('Error handling message:', error);
+    setError("Error receiving message. Please try again.");
+  }
+};
 
     socket.addEventListener('message', handleMessage);
     return () => socket.removeEventListener('message', handleMessage);
@@ -185,12 +191,11 @@ const ChatInterface = ({ projectId, currentUser, onClose }) => {
       socket.send(JSON.stringify(messageData));
       
       console.log("messageData : ",messageData)
-      // setMessages(prev => [...prev, {
       //   ...messageData,
       //   timestamp: new Date().toISOString(),
       //   isOwnMessage: true
       // }]);
-      
+      setSelectedFile(null)
       setNewMessage('');
       setError(null);
     } catch (error) {
@@ -214,6 +219,7 @@ const ChatInterface = ({ projectId, currentUser, onClose }) => {
   };
 
   console.log("messages :============ ", messages)
+
   const handleFileUpload = async (messageId) => {
   if (!selectedFile) return;
   const formData = new FormData();
@@ -265,7 +271,7 @@ const handleFileChange = (e) => {
   }
 
   return (
-    <Card className="flex flex-col h-[450px] bg-background border-0 shadow-lg">
+    <Card className="flex flex-col h-[450px] max-xs:h-[550px] bg-background border-0 shadow-lg">
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b bg-card">
         <div className="flex items-center space-x-3">
@@ -380,16 +386,20 @@ const handleFileChange = (e) => {
     </div>
   )}
   {message.file && message.file.name && message.file.data && (
-  <div className="mt-2">
+    <div className="mt-2 p-2 bg-background/50 rounded border">
+  <div className="flex items-center space-x-2">
+    <FileText className="h-4 w-4" />
     <a
       href={`data:${message.file.type};base64,${message.file.data}`}
       download={message.file.name}
-      className="text-sm text-primary underline"
+      className="text-sm text-primary underline text-black"
       target="_blank"
       rel="noopener noreferrer"
     >
-      {message.file.name}
+      <span>{message.file.name}</span>
+      <Download className="h-3 w-3" />
     </a>
+  </div>
   </div>
 )}
 </div>
@@ -504,7 +514,7 @@ const handleFileChange = (e) => {
           <Button
             onClick={sendMessage}
             size="sm"
-            disabled={!isConnected || (!newMessage.trim() && !selectedFile)} 
+            disabled={!isConnected || (!newMessage.trim() && !selectedFile)}
             className="shrink-0"
           >
             <Send className="h-4 w-4" />

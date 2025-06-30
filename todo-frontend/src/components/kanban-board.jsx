@@ -115,7 +115,7 @@ export default function KanbanBoard({ projectId, taskListId }) {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center flex-wrap max-xs:gap-3">
         <div className="flex gap-2">
           <Button onClick={openCreateTaskModal} className="flex items-center gap-2">
             <PlusCircle className="h-4 w-4" />

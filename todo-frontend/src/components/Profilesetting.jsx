@@ -453,9 +453,9 @@ fetchprofile();
 
         {/* Content */}
         <div className="flex h-[calc(90vh-120px)]">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="flex w-full">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="flex max-xs:flex-col w-full">
             {/* Sidebar Navigation */}
-            <div className="w-64 border-r border-slate-200 bg-slate-50/50">
+            <div className="border-r border-slate-200 bg-slate-50/50">
               <TabsList className="flex flex-col h-full w-full bg-transparent p-4 space-y-2">
                 <TabsTrigger
                   value="profile"
@@ -499,7 +499,7 @@ fetchprofile();
                     {/* Avatar Section */}
                     <Card className="mb-6">
                       <CardContent className="p-6">
-                        <div className="flex items-center space-x-6">
+                        <div className="flex max-xs:flex-col max-xs:gap-3 items-center space-x-6">
                           <div className="relative">
                             <Avatar className="w-24 h-24">
                               <AvatarImage src={profileData.avatar || "/api/placeholder/96/96"} />
@@ -698,7 +698,7 @@ fetchprofile();
                     {/* Organization Logo */}
                     <Card className="mb-6">
                       <CardContent className="p-6">
-                        <div className="flex items-center space-x-6">
+                        <div className="flex items-center max-xs:flex-col max-xs:gap-3 space-x-6">
                           <div className="relative">
                             <div className="w-24 h-24 bg-slate-100 rounded-xl flex items-center justify-center overflow-hidden">
                               {orgData.logo ? (

@@ -12,7 +12,7 @@ import { Input } from "../components/ui/input"
 import { Button } from "../components/ui/button"
 import { Textarea } from "../components/ui/textarea"
 import { createProject, deleteProject } from "../api/AxiosAuth"
-import {MoreHorizontal,Plus,Users,Calendar,BarChart3,MessageSquare,LogOut,Filter,X,Search,Bell,Settings,Folder,Clock,Target,} from "lucide-react"
+import {MoreHorizontal,Plus,Users,Calendar,BarChart3,MessageSquare,LogOut,Filter,X,Search,Bell,Settings,Folder,Clock,Target, Menu} from "lucide-react"
 import { toast } from "sonner";
 import { Switch } from "../components/ui/switch"
 import ChatInterface from "../components/ChatInterface"
@@ -28,6 +28,22 @@ import { Avatar, AvatarFallback, AvatarImage } from "../components/ui/avatar"
 import { Separator } from "../components/ui/separator"
 import SettingsProfile from "../components/Profilesetting"
 import { formatDistanceToNow } from "date-fns";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "../components/ui/sheet"
+// import ThemeToggle from "../store/togge"
+// import { useTheme } from "../store/ThemeContext"
+import { Moon, Sun } from "lucide-react";
+import ResponsiveNavbar from "./ResponsiveNav"
+
+
+
+
 
 const Dashboard = () => {
   const [projects, setProjects] = useState([])
@@ -52,7 +68,7 @@ const Dashboard = () => {
   
 
   const navigate = useNavigate()
-
+  // const { theme, toggleTheme } = useTheme();
   const [filters, setFilters] = useState({
     status: "",
     priority: "",
@@ -282,6 +298,8 @@ const onSelectWithLoadingState = async (proj) => {
       const response = await duplicateproject(projectId)
       const newProject = response.data
       setProjects([...projects, newProject])
+      setSelectProject(newProject)
+      await fetchTasksForProject(newProject)
       toast.success("Project duplicated successfully")
     } catch (error) {
       console.error("Error duplicating project:", error)
@@ -359,8 +377,8 @@ const onSelectWithLoadingState = async (proj) => {
 const filteredProjects = useMemo(() => {
   return projects.filter(
     (project) =>
-      project.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      project.description?.toLowerCase().includes(searchQuery.toLowerCase()),
+      (project.name && project.name.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (project.description && project.description.toLowerCase().includes(searchQuery.toLowerCase()))
   )
 }, [projects, searchQuery])
 
@@ -382,115 +400,11 @@ const filteredProjects = useMemo(() => {
   }
 
   return (
-    <div className="min-h-screen ">
+    <div className="min-h-screen">
       {/* Modern Header */}
-      <header className="bg-white/80 backdrop-blur-xl border-b border-slate-200/60 shadow-sm sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-6 py-4">
-          <div className="flex justify-between items-center">
-            <div className="flex items-center space-x-6">
-              <div className="flex items-center space-x-4">
-                <div className="relative">
-                  <Avatar className="h-12 w-12 ring-2 ring-blue-100">
-                    <AvatarImage src="/api/placeholder/48/48" />
-                    <AvatarFallback className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold">
-                      {user?.username?.charAt(0)?.toUpperCase() || "U"}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white"></div>
-                </div>
-                <div>
-                  <h1 className="text-2xl font-bold text-slate-800">Project Dashboard</h1>
-                  <p className="text-slate-600 text-sm">
-                    Welcome back, <span className="font-medium text-blue-600">{user?.username || "User"}</span>
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex items-center space-x-3">
-              <div className="relative">
-                <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
-                <Input
-                  placeholder="Search projects..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 w-64 bg-slate-50/50 border-slate-200 focus:border-blue-300 focus:ring-blue-200"
-                />
-              </div>
-
-              <Separator orientation="vertical" className="h-6" />
-
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setIsChatOpen(true)}
-                className="text-slate-600 hover:text-blue-600 hover:bg-blue-50"
-              >
-                <MessageSquare className="w-4 h-4 mr-2" />
-                Chat
-              </Button>
-
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowTeamManagement(true)}
-                className="text-slate-600 hover:text-indigo-600 hover:bg-indigo-50"
-              >
-                <Users className="w-4 h-4 mr-2" />
-                Team
-              </Button>
-
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => navigate("/calender")}
-                className="text-slate-600 hover:text-emerald-600 hover:bg-emerald-50"
-              >
-                <Calendar className="w-4 h-4 mr-2" />
-                Calendar
-              </Button>
-
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => navigate("/analytics")}
-                className="text-slate-600 hover:text-amber-600 hover:bg-amber-50"
-              >
-                <BarChart3 className="w-4 h-4 mr-2" />
-                Analytics
-              </Button>
-
-              <Separator orientation="vertical" className="h-6" />
-              <div className="flex items-center space-x-2">
-      <Switch id="airplane-mode" />
-      <Label htmlFor="airplane-mode" className="text-xs">Dark Mode</Label>
-    </div>
-
-              <Button variant="ghost" size="sm" className="text-slate-600 hover:text-slate-800 hover:bg-slate-100">
-                <Bell className="w-4 h-4" />
-              </Button>
-
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" className="text-slate-600 hover:text-slate-800 hover:bg-slate-100">
-                    <Settings className="w-4 h-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48">
-                    <DropdownMenuItem onClick={() => setShowSettings(true)}>
-                    <Settings project={selectproject} className="w-4 h-4 mr-2" />
-                    Settings & Profile
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={logout} className="text-red-600 focus:text-red-600">
-                    <LogOut className="w-4 h-4 mr-2" />
-                    Logout
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          </div>
-        </div>
-      </header>
+      <ResponsiveNavbar setSearchQuery={setSearchQuery} user={user} 
+      setIsChatOpen={setIsChatOpen} navigate={navigate} setShowSettings={setShowSettings} 
+      logout={logout} selectproject={selectproject} setShowTeamManagement={setShowTeamManagement} />
 
       {/* Enhanced Stats Section */}
       {stats && (
@@ -710,7 +624,7 @@ const filteredProjects = useMemo(() => {
           <div className="col-span-12 lg:col-span-8">
             <Card className="bg-white/60 backdrop-blur-sm border-slate-200/60 shadow-sm min-h-[700px]">
               <CardHeader className="pb-4">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between flex-wrap max-xs:gap-4">
                   <div className="flex items-center space-x-3">
                     <div className="p-2 bg-indigo-100 rounded-lg">
                       <Target className="w-5 h-5 text-indigo-600" />
@@ -940,4 +854,6 @@ const filteredProjects = useMemo(() => {
   )
 }
 
+
 export default Dashboard
+

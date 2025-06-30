@@ -36,6 +36,7 @@ a:hover {
 body {
   margin: 0;
   padding:0;
+  overflow-x: hidden;
   /* place-items: center; */
   height: 100vh;
   font-family: "Gabarito";
@@ -46,6 +47,7 @@ body {
   
  
 }
+
 
 @layer base {
   :root {
@@ -112,4 +114,4 @@ body {
   }
 }
 
-
+ 

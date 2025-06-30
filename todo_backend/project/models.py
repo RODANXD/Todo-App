@@ -155,6 +155,7 @@ class ChatMessage(models.Model):
     edited_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    file = models.FileField(upload_to='chat_files/', null=True, blank=True)
     
     class Meta:
         ordering = ['created_at']

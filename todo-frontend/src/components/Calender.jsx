@@ -219,246 +219,176 @@ const handleUpdateEvent = async () => {
   
 
   return (
-    <div className="space-y-6 p-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl text-white font-bold tracking-tight">Calendar</h1>
-          <p className="text-muted-foreground">View and manage your project deadlines and events</p>
-        </div>
-        <div className="flex items-center space-x-2">
-        <Button onClick={() => setIsEventModalOpen(true)}>
-          <Plus className="mr-2 h-4 w-4" />
-          Add Event
-        </Button>
-        <Button onClick={downloadTimesheetCSV} variant="outline">
-          Download Timesheet CSV
-        </Button>
-        <Button onClick={() => navigate("/")} >Back to dashboard</Button>
-        </div>
-      </div>
-
-      <Tabs value={view} onValueChange={setView}>
-        <TabsList>
-          <TabsTrigger value="month">Month</TabsTrigger>
-          <TabsTrigger value="week">Week</TabsTrigger>
-          {/* <TabsTrigger value="day">Day</TabsTrigger> */}
-          <TabsTrigger value="timeline">Timeline</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="month" className="mt-4">
-          {/* Existing Month View */}
-          <Card className="md:col-span-2">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle>
-                  {format(currentMonth, "MMMM yyyy")}
-                </CardTitle>
-                <div className="flex space-x-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1))}
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1))}
-                  >
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {loading ? (
-                <div className="flex justify-center items-center h-96">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
-                </div>
-              ) : error ? (
-                <div className="text-center text-red-500 py-4">{error}</div>
-              ) : (
-                <div className="grid grid-cols-7 gap-1">
-                  {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
-                    <div key={day} className="text-center font-semibold py-2">
-                      {day}
-                    </div>
-                  ))}
-                  {eachDayOfInterval({
-                    start: startOfMonth(currentMonth),
-                    end: endOfMonth(currentMonth)
-                  }).map((date) => {
-                    const dayEvents = getDayEvents(date);
-                    // console.log("Day events for", date, ":", dayEvents);
-                    return (
-                      <div
-                        key={date.toISOString()}
-                        className={`min-h-[100px] p-1 border rounded-md ${format(date, 'MM') !== format(currentMonth, 'MM') ? 'bg-gray-50' : ''} ${format(date, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd') ? 'border-blue-500' : ''}`}
-                        onClick={() => setSelectedDate(date)}
-                      >
-                        <div className="text-right text-sm">{format(date, 'd')}</div>
-                        <div className="space-y-1">
-                          {dayEvents.map((event) => (
-                            <div
-                              key={event.id}
-                              className={`text-xs text-black bg-cyan-600/35 p-1 rounded-md cursor-pointer ${event.type === 'task' ? 'bg-blue-100' : event.type === 'milestone' ? 'bg-green-100' : 'bg-purple-100'}`}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                
-                                setSelectedEvent(event);
-                                setPopoverAnchor(e.currentTarget);
-                                // Handle event click
-                              }}
-                              draggable
-                              onDragStart={(e) => e.dataTransfer.setData('eventId', event.id)}
-                            >
-                              <div>{event.title} - {event.created_by.username}</div>
-                              {event.project && (
-                                <div className="text-[10px] text-gray-500">
-                                  {event.project.getTime || `Project #${event.project}`}{event.start_time && ` - ${format(new Date(event.start_time), 'HH:mm')}`}
-                                </div>
-                              )}
-                            </div>
-                          ))}
-                          
-                        </div>
-                        
-                      </div>
-                      
-                    );
-                    
-                  })}
-                  {selectedEvent && (
-                    <Dialog open={!!selectedEvent} onOpenChange={open => { if (!open) setSelectedEvent(null); }}>
-
-        <DialogContent className="gap-0">
-          <DialogHeader>
-            <DialogTitle>{selectedEvent.title}</DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-2 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="title">{selectedEvent.description}</Label>
-              <Input
-                id="title"
-                value={selectedEvent.title}
-                onChange={(e) => setSelectedEvent({ ...selectedEvent, title: e.target.value })}
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="date">Started Date - {format(selectedEvent.start_time, "yyy-MM-dd")}</Label>
-              <div className="flex gap-2">
-                <Input
-                  id="date"
-                  type="date"
-                  value={format(selectedEvent.start_time, "yyyy-MM-dd")}
-                  onChange={(e) => setSelectedEvent({ ...selectedEvent, start_time: new Date(e.target.value).toISOString() })}
-                />
-                <Input
-                  type="time"
-                  value={format(selectedEvent.start_time, "HH:mm")}
-                  onChange={(e) => {
-                    const [hours, minutes] = e.target.value.split(":")
-                    const newDate = new Date(selectedEvent.start_time)
-                    newDate.setHours(parseInt(hours), parseInt(minutes))
-                    setSelectedEvent({ ...selectedEvent, start_time: newDate.toISOString() })
-                  }}
-                />
-              </div>
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="date">End Date - {format(selectedEvent.end_time, "yyy-MM-dd")}</Label>
-              <div className="flex gap-2">
-                <Input
-                  id="date"
-                  type="date"
-                  value={format(selectedEvent.end_time, "yyyy-MM-dd")}
-                  onChange={(e) => setSelectedEvent({ ...selectedEvent, end_time: new Date(e.target.value).toISOString() })}
-                />
-                <Input
-                  type="time"
-                  value={format(selectedEvent.end_time, "HH:mm")}
-                  onChange={(e) => {
-                    const [hours, minutes] = e.target.value.split(":")
-                    const newDate = new Date(selectedEvent.end_time)
-                    newDate.setHours(parseInt(hours), parseInt(minutes))
-                    setSelectedEvent({ ...selectedEvent, end_time: newDate.toISOString() })
-                  }}
-                />
-              </div>
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="type">Type</Label>
-              <Select
-                value={selectedEvent.event_type}
-                onValueChange={(value) => setSelectedEvent({ ...selectedEvent, type: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="task">Task</SelectItem>
-                  <SelectItem value="milestone">Milestone</SelectItem>
-                  <SelectItem value="meeting">Meeting</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div><Label> Event Location </Label>
-            <Input
-                id="location"
-                value={selectedEvent.location || ""}
-                onChange={(e) => setSelectedEvent({ ...selectedEvent, location: e.target.value })}
-                placeholder="Event location"
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="project">Project</Label>
-              <Select
-                value={selectedEvent.project}
-                onValueChange={(value) => setSelectedEvent({ ...selectedEvent, project: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select project" />
-                </SelectTrigger>
-                <SelectContent>
-                  {projects.map((project) => (
-                    <SelectItem key={project.id} value={project.id.toString()}>
-                      {project.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="description">Description</Label>
-              <Input
-                id="description"
-                value={selectedEvent.description}
-                onChange={(e) => setSelectedEvent({ ...selectedEvent, description: e.target.value })}
-                placeholder="Event description"
-              />
-            </div>
+    <div className="min-h-screen  p-2 sm:p-4 lg:p-6">
+      <div className="max-w-7xl mx-auto space-y-4 sm:space-y-6">
+        {/* Header Section - Fully Responsive */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 sm:gap-2">
+          <div className="text-center sm:text-left">
+            <h1 className="text-2xl sm:text-3xl text-white font-bold tracking-tight">Calendar</h1>
+            <p className="text-sm sm:text-base text-muted-foreground mt-1">
+              View and manage your project deadlines and events
+            </p>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setSelectedEvent(false)}>
-              Cancel
+          
+          {/* Action Buttons - Responsive Stack */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
+            <Button 
+              onClick={() => setIsEventModalOpen(true)}
+              className="w-full sm:w-auto flex-shrink-0"
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Add Event
             </Button>
-            <Button onClick={handleUpdateEvent}>Update Event</Button>
-            <Button variant="destructive" onClick={() => handleDeleteEvent(selectedEvent.id)}>Delete Event</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-  
-)}
+            <Button 
+              onClick={downloadTimesheetCSV} 
+              variant="outline"
+              className="w-full sm:w-auto flex-shrink-0"
+            >
+              Download CSV
+            </Button>
+            <Button 
+              onClick={() => navigate("/")}
+              className="w-full sm:w-auto flex-shrink-0"
+            >
+              Back to Dashboard
+            </Button>
+          </div>
+        </div>
+
+        {/* Tabs Section - Responsive */}
+        <Tabs value={view} onValueChange={setView} className="w-full">
+          <TabsList className="grid w-full grid-cols-3 max-w-md mx-auto sm:mx-0">
+            <TabsTrigger value="month" className="text-xs sm:text-sm">Month</TabsTrigger>
+            <TabsTrigger value="week" className="text-xs sm:text-sm">Week</TabsTrigger>
+            <TabsTrigger value="timeline" className="text-xs sm:text-sm">Timeline</TabsTrigger>
+          </TabsList>
+
+          {/* Month View - Fully Responsive Calendar */}
+          <TabsContent value="month" className="mt-4">
+            <Card className="w-full overflow-hidden">
+              <CardHeader className="pb-4">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                  <CardTitle className="text-lg sm:text-xl text-center sm:text-left">
+                    {format(currentMonth, "MMMM yyyy")}
+                  </CardTitle>
+                  <div className="flex justify-center sm:justify-end space-x-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1))}
+                      className="flex-shrink-0"
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1))}
+                      className="flex-shrink-0"
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
-              )}
+              </CardHeader>
+              
+              <CardContent className="p-2 sm:p-6">
+                {loading ? (
+                  <div className="flex justify-center items-center h-64 sm:h-96">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                  </div>
+                ) : error ? (
+                  <div className="text-center text-red-500 py-8">{error}</div>
+                ) : (
+                  <div className="w-full overflow-x-auto">
+                    <div className="min-w-full">
+                      {/* Calendar Grid - Responsive */}
+                      <div className="grid grid-cols-7 gap-1 sm:gap-2 min-w-[280px]">
+                        {/* Day Headers */}
+                        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
+                          <div key={day} className="text-center font-semibold py-2 text-xs sm:text-sm">
+                            <span className="hidden sm:inline">{day}</span>
+                            <span className="sm:hidden">{day.slice(0, 1)}</span>
+                          </div>
+                        ))}
+                        
+                        {/* Calendar Days */}
+                        {eachDayOfInterval({
+                          start: startOfMonth(currentMonth),
+                          end: endOfMonth(currentMonth)
+                        }).map((date) => {
+                          const dayEvents = getDayEvents(date);
+                          const isToday = format(date, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd');
+                          const isCurrentMonth = format(date, 'MM') === format(currentMonth, 'MM');
+                          
+                          return (
+                            <div
+                              key={date.toISOString()}
+                              className={`
+                                min-h-[60px] sm:min-h-[100px] lg:min-h-[120px] 
+                                p-1 sm:p-2 border rounded-md cursor-pointer
+                                transition-all duration-200 hover:shadow-md
+                                ${!isCurrentMonth ? 'bg-gray-50 opacity-50' : 'bg-white'}
+                                ${isToday ? 'border-blue-500 ring-1 ring-blue-200' : 'border-gray-200'}
+                                hover:border-blue-300
+                              `}
+                              onClick={() => setSelectedDate(date)}
+                            >
+                              {/* Date Number */}
+                              <div className={`
+                                text-right text-xs sm:text-sm font-medium mb-1
+                                ${isToday ? 'text-blue-600 font-bold' : 'text-gray-700'}
+                              `}>
+                                {format(date, 'd')}
+                              </div>
+                              
+                              {/* Events Container */}
+                              <div className="space-y-1 overflow-y-scroll scrollbar-hide">
+                                {dayEvents.slice(0, 50).map((event) => (
+                                  <div
+                                    key={event.id}
+                                    className={`
+                                      text-xs p-1 rounded-sm cursor-pointer
+                                      transition-all duration-150 hover:shadow-sm
+                                      ${event.event_type === 'task' ? 'bg-blue-100 text-blue-800' : 
+                                        event.event_type === 'milestone' ? 'bg-green-100 text-green-800' : 
+                                        'bg-purple-100 text-purple-800'}
+                                      truncate
+                                    `}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setSelectedEvent(event);
+                                    }}
+                                    title={`${event.title} - ${event.created_by.username}`}
+                                  >
+                                    <div className="font-medium truncate">{event.title}</div>
+                                    <div className="text-[10px] opacity-75 hidden sm:block">
+                                      {event.created_by.username}
+                                    </div>
+                                  </div>
+                                ))}
+                                
+                                {/* More events indicator */}
+                                {/* {dayEvents.length > 2 && (
+                                  <div className="text-[10px] text-gray-500 text-center py-1">
+                                    +{dayEvents.length - 2} more
+                                  </div>
+                                )} */}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
 
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="week" className="mt-4">
-         <WeekView
+          {/* Week View Placeholder */}
+          <TabsContent value="week" className="mt-4">
+            <WeekView
   selectedDate={selectedDate}
   events={events}
   onEventDrag={handleDragEvent}
@@ -466,104 +396,249 @@ const handleUpdateEvent = async () => {
   onUpdateEvent={handleUpdateEvent}
   onDeleteEvent={handleDeleteEvent}
 />
-        </TabsContent>
+          </TabsContent>
 
+          {/* Timeline View Placeholder */}
+          <TabsContent value="timeline" className="mt-4">
+            <GanttTimeline />
+          </TabsContent>
+        </Tabs>
 
+        {/* Event Detail Modal - Responsive */}
+        {selectedEvent && (
+          <Dialog open={!!selectedEvent} onOpenChange={() => setSelectedEvent(null)}>
+            <DialogContent className="w-full max-w-md sm:max-w-lg mx-2 sm:mx-auto max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle className="text-lg sm:text-xl">{selectedEvent.title}</DialogTitle>
+              </DialogHeader>
+              
+              <div className="grid gap-4 py-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="event-title">Title</Label>
+                  <Input
+                    id="event-title"
+                    value={selectedEvent.title}
+                    onChange={(e) => setSelectedEvent({ ...selectedEvent, title: e.target.value })}
+                  />
+                </div>
 
+                <div className="grid gap-2">
+                  <Label>Start Date - {format(new Date(selectedEvent.start_time), "yyyy-MM-dd")}</Label>
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <Input
+                      type="date"
+                      value={format(new Date(selectedEvent.start_time), "yyyy-MM-dd")}
+                      onChange={(e) => setSelectedEvent({ 
+                        ...selectedEvent, 
+                        start_time: new Date(e.target.value).toISOString() 
+                      })}
+                    />
+                    <Input
+                      type="time"
+                      value={format(new Date(selectedEvent.start_time), "HH:mm")}
+                      onChange={(e) => {
+                        const [hours, minutes] = e.target.value.split(":");
+                        const newDate = new Date(selectedEvent.start_time);
+                        newDate.setHours(parseInt(hours), parseInt(minutes));
+                        setSelectedEvent({ ...selectedEvent, start_time: newDate.toISOString() });
+                      }}
+                    />
+                  </div>
+                </div>
 
-        <TabsContent value="timeline" className="mt-4">
-          <GanttTimeline />
-        </TabsContent>
-      </Tabs>
+                <div className="grid gap-2">
+                  <Label>End Date - {format(new Date(selectedEvent.end_time), "yyyy-MM-dd")}</Label>
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <Input
+                      type="date"
+                      value={format(new Date(selectedEvent.end_time), "yyyy-MM-dd")}
+                      onChange={(e) => setSelectedEvent({ 
+                        ...selectedEvent, 
+                        end_time: new Date(e.target.value).toISOString() 
+                      })}
+                    />
+                    <Input
+                      type="time"
+                      value={format(new Date(selectedEvent.end_time), "HH:mm")}
+                      onChange={(e) => {
+                        const [hours, minutes] = e.target.value.split(":");
+                        const newDate = new Date(selectedEvent.end_time);
+                        newDate.setHours(parseInt(hours), parseInt(minutes));
+                        setSelectedEvent({ ...selectedEvent, end_time: newDate.toISOString() });
+                      }}
+                    />
+                  </div>
+                </div>
 
-      {/* Add Event Modal */}
-      <Dialog open={isEventModalOpen} onOpenChange={setIsEventModalOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Add New Event</DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="title">Title</Label>
-              <Input
-                id="title"
-                value={newEvent.title}
-                onChange={(e) => setNewEvent({ ...newEvent, title: e.target.value })}
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="date">Date</Label>
-              <div className="flex gap-2">
+                <div className="grid gap-2">
+                  <Label>Type</Label>
+                  <Select
+                    value={selectedEvent.event_type}
+                    onValueChange={(value) => setSelectedEvent({ ...selectedEvent, event_type: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="task">Task</SelectItem>
+                      <SelectItem value="milestone">Milestone</SelectItem>
+                      <SelectItem value="meeting">Meeting</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="grid gap-2">
+                  <Label>Event Location</Label>
+                  <Input
+                    value={selectedEvent.location || ""}
+                    onChange={(e) => setSelectedEvent({ ...selectedEvent, location: e.target.value })}
+                    placeholder="Event location"
+                  />
+                </div>
+
+                <div className="grid gap-2">
+                  <Label>Project</Label>
+                  <Select
+                    value={selectedEvent.project?.toString()}
+                    onValueChange={(value) => setSelectedEvent({ ...selectedEvent, project: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select project" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {projects.map((project) => (
+                        <SelectItem key={project.id} value={project.id.toString()}>
+                          {project.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="grid gap-2">
+                  <Label>Description</Label>
+                  <Input
+                    value={selectedEvent.description}
+                    onChange={(e) => setSelectedEvent({ ...selectedEvent, description: e.target.value })}
+                    placeholder="Event description"
+                  />
+                </div>
+              </div>
+
+              <DialogFooter className="flex flex-col sm:flex-row gap-2">
+                <Button variant="outline" onClick={() => setSelectedEvent(null)} className="w-full sm:w-auto">
+                  Cancel
+                </Button>
+                <Button onClick={handleUpdateEvent} className="w-full sm:w-auto">
+                  Update Event
+                </Button>
+                <Button 
+                  variant="destructive" 
+                  onClick={() => handleDeleteEvent(selectedEvent.id)}
+                  className="w-full sm:w-auto"
+                >
+                  Delete Event
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        )}
+
+        {/* Add Event Modal - Responsive */}
+        <Dialog open={isEventModalOpen} onOpenChange={setIsEventModalOpen}>
+          <DialogContent className="w-full max-w-md sm:max-w-lg mx-2 sm:mx-auto max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Add New Event</DialogTitle>
+            </DialogHeader>
+            
+            <div className="grid gap-4 py-4">
+              <div className="grid gap-2">
+                <Label htmlFor="new-title">Title</Label>
                 <Input
-                  id="date"
-                  type="date"
-                  value={format(newEvent.date, "yyyy-MM-dd")}
-                  onChange={(e) => setNewEvent({ ...newEvent, date: new Date(e.target.value) })}
+                  id="new-title"
+                  value={newEvent.title}
+                  onChange={(e) => setNewEvent({ ...newEvent, title: e.target.value })}
                 />
+              </div>
+
+              <div className="grid gap-2">
+                <Label>Date</Label>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <Input
+                    type="date"
+                    value={format(newEvent.date, "yyyy-MM-dd")}
+                    onChange={(e) => setNewEvent({ ...newEvent, date: new Date(e.target.value) })}
+                  />
+                  <Input
+                    type="time"
+                    value={format(newEvent.date, "HH:mm")}
+                    onChange={(e) => {
+                      const [hours, minutes] = e.target.value.split(":");
+                      const newDate = new Date(newEvent.date);
+                      newDate.setHours(parseInt(hours), parseInt(minutes));
+                      setNewEvent({ ...newEvent, date: newDate });
+                    }}
+                  />
+                </div>
+              </div>
+
+              <div className="grid gap-2">
+                <Label>Type</Label>
+                <Select
+                  value={newEvent.type}
+                  onValueChange={(value) => setNewEvent({ ...newEvent, type: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="task">Task</SelectItem>
+                    <SelectItem value="milestone">Milestone</SelectItem>
+                    <SelectItem value="meeting">Meeting</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="grid gap-2">
+                <Label>Project</Label>
+                <Select
+                  value={newEvent.project}
+                  onValueChange={(value) => setNewEvent({ ...newEvent, project: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select project" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {projects.map((project) => (
+                      <SelectItem key={project.id} value={project.id.toString()}>
+                        {project.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="grid gap-2">
+                <Label>Description</Label>
                 <Input
-                  type="time"
-                  value={format(newEvent.date, "HH:mm")}
-                  onChange={(e) => {
-                    const [hours, minutes] = e.target.value.split(":")
-                    const newDate = new Date(newEvent.date)
-                    newDate.setHours(parseInt(hours), parseInt(minutes))
-                    setNewEvent({ ...newEvent, date: newDate })
-                  }}
+                  value={newEvent.description}
+                  onChange={(e) => setNewEvent({ ...newEvent, description: e.target.value })}
+                  placeholder="Event description"
                 />
               </div>
             </div>
-            <div className="grid gap-2">
-              <Label htmlFor="type">Type</Label>
-              <Select
-                value={newEvent.type}
-                onValueChange={(value) => setNewEvent({ ...newEvent, type: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="task">Task</SelectItem>
-                  <SelectItem value="milestone">Milestone</SelectItem>
-                  <SelectItem value="meeting">Meeting</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="project">Project</Label>
-              <Select
-                value={newEvent.project}
-                onValueChange={(value) => setNewEvent({ ...newEvent, project: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select project" />
-                </SelectTrigger>
-                <SelectContent>
-                  {projects.map((project) => (
-                    <SelectItem key={project.id} value={project.id.toString()}>
-                      {project.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="description">Description</Label>
-              <Input
-                id="description"
-                value={newEvent.description}
-                onChange={(e) => setNewEvent({ ...newEvent, description: e.target.value })}
-                placeholder="Event description"
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsEventModalOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleAddEvent}>Add Event</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+
+            <DialogFooter className="flex flex-col sm:flex-row gap-2">
+              <Button variant="outline" onClick={() => setIsEventModalOpen(false)} className="w-full sm:w-auto">
+                Cancel
+              </Button>
+              <Button onClick={handleAddEvent} className="w-full sm:w-auto">
+                Add Event
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
     </div>
   )
 }
