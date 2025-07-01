@@ -245,6 +245,7 @@ const SettingsProfile = ({ onClose, project }) => {
         bio: profileData.bio,
         avatar: profileData.avatar,
       };
+      console.log("profiledata", data)
       await updateProfile(data);
       // Simulate API call
       if (profileData.currentPassword && profileData.newPassword && profileData.confirmPassword) {

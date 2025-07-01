@@ -92,19 +92,7 @@ export default function TaskModal({ isOpen, onClose, task, projectId, taskListId
       project: projectId,
       task_list: taskListId,
       assigned_to: assignee || null,
-      dependencies: dependency ? [dependency] : [] // Convert to array if needed
-  
-
-    // title,
-    // description,
-    // status,
-    // priority,
-    // due_date: dueDate?.toISOString() || new Date().toISOString(),
-    // assignee: assignee || "Unassigned",
-    // project_id: parseInt(projectId), // Ensure this is a number
-    // task_list_id: parseInt(taskListId), // Ensure this is a number
-    // project: projectId, // Changed from project_id to project
-    // task_list: taskListId,
+      dependencies: dependency ? [dependency] : []
   }
 
   // console.log("=== TASK CREATION DEBUG ===")
@@ -113,7 +101,7 @@ export default function TaskModal({ isOpen, onClose, task, projectId, taskListId
   // console.log("Task List ID:", taskListId, "Type:", typeof taskListId)
   // console.log("==========================")
   
-  try {
+try {
     if (isSubmitting) return;
       setIsSubmitting(true);
     if (task) {
@@ -135,12 +123,12 @@ export default function TaskModal({ isOpen, onClose, task, projectId, taskListId
       //   project: projectId,
       //   task_list: taskListId
       // })
-       if (response.data) {
-        addTask(response.data);
-        toast.success("Task created successfully");
-        // window.location.reload();
-        onClose();
-      }
+          if (response.data) {
+            addTask(response.data);
+              toast.success("Task created successfully");
+              // window.location.reload();
+              onClose();
+            }
       
       alert("Task created sucessfully")
       // window.location.reload()

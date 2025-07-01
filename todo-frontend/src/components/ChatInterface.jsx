@@ -159,50 +159,49 @@ const handleMessage = (e) => {
 
   // Send message function
   const sendMessage = useCallback(async () => {
-    if (!isConnected || !socket) {
-      setError('Not connected. Please wait...');
-      return;
-    }
+  if (!isConnected || !socket) {
+    setError('Not connected. Please wait...');
+    return;
+  }
 
+  let messageToSend = newMessage.trim();
+  if (!messageToSend && selectedFile) {
+    messageToSend = " "; 
+  }
 
-    if (!newMessage.trim() && !selectedFile) return;
+  if (!messageToSend && !selectedFile) return;
 
-    try {
-      let filedata = null
-      if(selectedFile){
-        filedata = await new Promise((resolve, reject)=>{
-          const reader = new FileReader()
-          reader.onload = () => resolve({
+  try {
+    let filedata = null;
+    if (selectedFile) {
+      filedata = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () =>
+          resolve({
             name: selectedFile.name,
             type: selectedFile.type,
             data: reader.result.split(',')[1],
-          })
-          reader.onerror = reject;
-          reader.readAsDataURL(selectedFile)
-        })
-      }
-      const messageData = {
-        type: "message",
-        message: newMessage.trim(),
-        username: currentUser,
-        file: filedata
-      };
-      
-      socket.send(JSON.stringify(messageData));
-      
-      console.log("messageData : ",messageData)
-      //   ...messageData,
-      //   timestamp: new Date().toISOString(),
-      //   isOwnMessage: true
-      // }]);
-      setSelectedFile(null)
-      setNewMessage('');
-      setError(null);
-    } catch (error) {
-      console.error('Error sending message:', error);
-      setError('Failed to send message. Please try again.');
+          });
+        reader.onerror = reject;
+        reader.readAsDataURL(selectedFile);
+      });
     }
-  }, [isConnected, socket, newMessage, currentUser]);
+    const messageData = {
+      type: "message",
+      message: messageToSend,
+      username: currentUser,
+      file: filedata,
+    };
+
+    socket.send(JSON.stringify(messageData));
+    setSelectedFile(null);
+    setNewMessage('');
+    setError(null);
+  } catch (error) {
+    console.error('Error sending message:', error);
+    setError('Failed to send message. Please try again.');
+  }
+}, [isConnected, socket, newMessage, currentUser, selectedFile]);
 
   // Handle message input with mentions
   const handleMessageInput = (e) => {
@@ -512,13 +511,13 @@ const handleFileChange = (e) => {
           </div>
           
           <Button
-            onClick={sendMessage}
-            size="sm"
-            disabled={!isConnected || (!newMessage.trim() && !selectedFile)}
-            className="shrink-0"
-          >
-            <Send className="h-4 w-4" />
-          </Button>
+  onClick={sendMessage}
+  size="sm"
+  disabled={!isConnected || (!newMessage.trim() && !selectedFile)}
+  className="shrink-0"
+>
+  <Send className="h-4 w-4" />
+</Button>
         </div>
         
         {!isConnected && (

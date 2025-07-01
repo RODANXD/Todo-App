@@ -709,7 +709,7 @@ const filteredProjects = useMemo(() => {
                         <select
                           value={filters.status}
                           onChange={(e) => setFilters((prev) => ({ ...prev, status: e.target.value }))}
-                          className="px-3 py-2 bg-white border border-slate-300 rounded-lg text-slate-700 text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-300"
+                          className="px-3 py-2 bg-[#f7797d] border border-slate-300 rounded-lg text-slate-800 text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-300"
                         >
                           <option value="">All Status</option>
                           <option value="todo">To Do</option>
@@ -720,7 +720,7 @@ const filteredProjects = useMemo(() => {
                         <select
                           value={filters.priority}
                           onChange={(e) => setFilters((prev) => ({ ...prev, priority: e.target.value }))}
-                          className="px-3 py-2 bg-white border border-slate-300 rounded-lg text-slate-700 text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-300"
+                          className="px-3 py-2 bg-[#f7797d] border border-slate-300 rounded-lg text-slate-800 text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-300"
                         >
                           <option value="">All Priority</option>
                           <option value="low">Low</option>
@@ -731,7 +731,7 @@ const filteredProjects = useMemo(() => {
                         <select
                           value={filters.assignedTo}
                           onChange={(e) => setFilters((prev) => ({ ...prev, assignedTo: e.target.value }))}
-                          className="px-3 py-2 bg-white border border-slate-300 rounded-lg text-slate-700 text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-300"
+                          className="px-3 py-2 bg-[#f7797d] border border-slate-300 rounded-lg text-slate-800 text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-300"
                         >
                           <option value="">All Assignees</option>
                           {selectproject.members?.map((member) => (
@@ -744,7 +744,7 @@ const filteredProjects = useMemo(() => {
                         <select
                           value={sortBy}
                           onChange={(e) => setSortBy(e.target.value)}
-                          className="px-3 py-2 bg-white border border-slate-300 rounded-lg text-slate-700 text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-300"
+                          className="px-3 py-2 bg-[#f7797d] border border-slate-300 rounded-lg text-slate-800 text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-300"
                         >
                           <option value="">Sort By</option>
                           <option value="dueDate">Due Date</option>
@@ -756,7 +756,7 @@ const filteredProjects = useMemo(() => {
                           type="date"
                           value={filters.dueDate}
                           onChange={(e) => setFilters((prev) => ({ ...prev, dueDate: e.target.value }))}
-                          className="bg-white w-32 focus:border-blue-300 focus:ring-blue-200"
+                          className="bg-[#f7797d] text-slate-800 w-[145px] focus:border-blue-300 focus:ring-blue-200"
                           placeholder="Due date"
                           
                         />
@@ -772,7 +772,7 @@ const filteredProjects = useMemo(() => {
                               createdBy: "",
                             })
                           }
-                          className="border-slate-300 text-slate-600 hover:bg-slate-50"
+                          className="border-slate-300 bg-[#f7797d] text-slate-800 hover:bg-slate-50 ml-3"
                         >
                           Clear All
                         </Button>
@@ -824,25 +824,50 @@ const filteredProjects = useMemo(() => {
 
       {/* Task Modal */}
       {isTaskModalOpen && (
+        // <TaskModal
+        //   isOpen={isTaskModalOpen}
+        //   onClose={closeTaskModal}
+        //   task={editingTask}
+        //   projectId={selectproject?.id}
+        //   taskListId={selectproject?.task_lists?.[0]?.id}
+        //   onSuccess={() => {
+        //     closeTaskModal()
+        //     const fetchTasks = async () => {
+        //       try {
+        //         const response = await getTasksByProject(selectproject.id)
+        //         setTasks(response.data.results || response.data)
+        //       } catch (error) {
+        //         console.error("Error fetching tasks:", error)
+        //       }
+        //     }
+        //     fetchTasks()
+        //   }}
+        // />
         <TaskModal
-          isOpen={isTaskModalOpen}
-          onClose={closeTaskModal}
-          task={editingTask}
-          projectId={selectproject?.id}
-          taskListId={selectproject?.task_lists?.[0]?.id}
-          onSuccess={() => {
-            closeTaskModal()
-            const fetchTasks = async () => {
-              try {
-                const response = await getTasksByProject(selectproject.id)
-                setTasks(response.data.results || response.data)
-              } catch (error) {
-                console.error("Error fetching tasks:", error)
-              }
-            }
-            fetchTasks()
-          }}
-        />
+  isOpen={isTaskModalOpen}
+  onClose={closeTaskModal}
+  task={editingTask}
+  projectId={selectproject?.id}
+  taskListId={selectproject?.task_lists?.[0]?.id}
+  onSuccess={() => {
+  closeTaskModal()
+  const fetchTasks = async () => {
+    try {
+      const response = await getTasksByProject(selectproject.id)
+      const updatedTasks = response.data.results || response.data
+      setTasks(updatedTasks)
+      setTasksByProject((prev) => ({
+        ...prev,
+        [selectproject.id]: updatedTasks
+      }))
+    } catch (error) {
+      console.error("Error fetching tasks:", error)
+    }
+  }
+  fetchTasks()
+}}
+
+/>
       )}
 
       {/* Team Management Modal */}

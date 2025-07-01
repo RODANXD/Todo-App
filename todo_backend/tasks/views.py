@@ -78,6 +78,7 @@ class TaskDetailView(generics.RetrieveUpdateDestroyAPIView):
         try:
             dependency = Task.objects.get(id=dependency_id)
             task.add_dependency(dependency)
+            print("dependency:", dependency)
             return Response({'status': 'dependency added'})
         except Task.DoesNotExist:
             return Response({'error': 'Task not found'}, status=status.HTTP_404_NOT_FOUND)

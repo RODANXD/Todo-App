@@ -157,20 +157,7 @@ export default function KanbanBoard({ projectId, taskListId }) {
                   {state.tasks.filter((task) => task.status === column.id).length}
                 </div>
               </div>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-8 w-8">
-                    <MoreHorizontal className="h-4 w-4" />
-                    <span className="sr-only">Column actions</span>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => openEditColumnModal(column)}>Edit Column</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleDeleteColumn(column.id)} className="text-red-600">
-                    Delete Column
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              
             </div>
 
             <div

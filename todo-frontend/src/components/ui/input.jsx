@@ -1,6 +1,5 @@
 import * as React from "react";
 import { cn } from "../../lib/utils";
-import { CalendarIcon } from "lucide-react";
 
 const Input = React.forwardRef(({ className, type, ...props }, ref) => {
   return (
@@ -15,9 +14,7 @@ const Input = React.forwardRef(({ className, type, ...props }, ref) => {
         ref={ref}
         {...props}
       />
-      {type === "date" && (
-        <CalendarIcon className="absolute -right-2 top-2.5 h-4 w-4 text-muted-foreground pointer-events-none" />
-      )}
+      
     </div>
   );
 });
