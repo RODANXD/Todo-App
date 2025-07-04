@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axiosinstance from '../api/AxiosAuth';
 import background from '../assets/background.jpg';
@@ -6,10 +6,16 @@ import loginbg from '../assets/loginbg.webp';
 import { toast } from "sonner";
 import { Eye, EyeOff } from "lucide-react";
 import { Button } from '../components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs"
+import {
+  User,
+  BuildingIcon} from "lucide-react"
 
 export default function Register() {
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [activeTab, setActiveTab] = useState("profile")
+
   const [form, setForm] = useState({
     first_name: '',
     last_name: '',
@@ -17,8 +23,16 @@ export default function Register() {
     email: '',
     password: '',
     password_confirm: '',
+    role:'member'
   });
   const navigate = useNavigate();
+
+  useEffect(() => {
+  setForm((prev) => ({
+    ...prev,
+    role: activeTab === "Admin" ? "admin" : "member"
+  }));
+}, [activeTab]);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -92,6 +106,29 @@ export default function Register() {
             <h2 className="text-4xl font-bold text-gray-900">Create an Account</h2>
             <p className="text-gray-500 mt-2">Sign up to get started</p>
           </div>
+          <div>
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-col max-xs:flex-col w-full">
+            {/* Sidebar Navigation */}
+            <div className="border-r border-slate-200 bg-slate-50/50">
+              <TabsList className="flex h-full w-full bg-transparent p-4 space-y-2">
+                <TabsTrigger
+                  value="User"
+                  className="w-full justify-start data-[state=active]:bg-blue-100 data-[state=active]:text-blue-700"
+                >
+                  <User className="w-4 h-4 mr-3" />
+                  User
+                </TabsTrigger>
+                <TabsTrigger
+                  value="Admin"
+                  className="w-full justify-start data-[state=active]:bg-blue-100 data-[state=active]:text-blue-700"
+                >
+                  <BuildingIcon className="w-4 h-4 mr-3" />
+                  Admin
+                </TabsTrigger>
+              </TabsList>
+            </div>
+
+          <TabsContent value="User" className="p-6 space-y-6 m-0">
           <form onSubmit={handleRegister} className="space-y-4">
             <div className="flex gap-4">
               <div>
@@ -213,6 +250,132 @@ export default function Register() {
               Register
             </button>
           </form>
+          </TabsContent>
+          <TabsContent value="Admin" className="p-6 space-y-6 m-0">
+          <form onSubmit={handleRegister} className="space-y-4">
+            <div className="flex gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
+                <input
+                  type="text"
+                  name="first_name"
+                  value={form.first_name}
+                  onChange={handleChange}
+                  className="w-full bg-gray-100 p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  placeholder="Enter your First Name"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
+                <input
+                  type="text"
+                  name="last_name"
+                  value={form.last_name}
+                  onChange={handleChange}
+                  className="w-full bg-gray-100 p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  placeholder="Enter your Last Name"
+                  required
+                />
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Username</label>
+              <input
+                type="text"
+                name="username"
+                value={form.username}
+                onChange={handleChange}
+                className="w-full bg-gray-100 p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                placeholder="Enter your username"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+              <input
+                type="email"
+                name="email"
+                value={form.email}
+                onChange={handleChange}
+                className="w-full bg-gray-100 p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                placeholder="Enter your email"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+              <div className="flex items-center">
+                <input
+                  type={showCurrentPassword ? "text" : "password"}
+                  name="password"
+                  value={form.password}
+                  onChange={handleChange}
+                  className="w-full bg-gray-100 p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  placeholder="Enter your password"
+                  required
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="relative right-8 h-6 w-1 p-0"
+                  onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                >
+                  {showCurrentPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </Button>
+              </div>
+              {form.password && !passwordValidation.isValid && (
+                <div className="text-sm text-red-500 mt-1">
+                  {passwordValidation.errors.map((error, index) => (
+                    <p key={index}>❌ {error}</p>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Confirm Password</label>
+              <div className="flex items-center">
+                <input
+                  type={showConfirmPassword ? "text" : "password"}
+                  name="password_confirm"
+                  value={form.password_confirm}
+                  onChange={handleChange}
+                  className="w-full bg-gray-100 p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  placeholder="Confirm your password"
+                  required
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="relative right-8 h-6 w-1 p-0"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                >
+                  {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </Button>
+              </div>
+              {form.password_confirm && (
+                <p className={`text-sm mt-1 ${passwordMatch ? "text-green-600" : "text-red-500"}`}>
+                  {passwordMatch ? "✅ Passwords match" : "❌ Passwords do not match"}
+                </p>
+              )}
+            </div>
+            <button
+              type="submit"
+              disabled={!passwordMatch || !passwordValidation.isValid}
+              className={`w-full py-2 font-semibold rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 ${
+                passwordMatch && passwordValidation.isValid
+                  ? 'bg-purple-600 text-white hover:bg-purple-700'
+                  : 'bg-gray-400 text-gray-200 cursor-not-allowed'
+              }`}
+            >
+              Register
+            </button>
+          </form>
+          </TabsContent>
+          </Tabs>
+          </div>
           <p className="mt-4 text-sm text-center text-gray-600">
             Already have an account? <a href="/login" className="text-purple-600 hover:text-purple-500">Login here</a>
           </p>

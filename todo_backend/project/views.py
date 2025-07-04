@@ -2,7 +2,7 @@ from organizations.models import OrganizationMember
 from rest_framework import generics, status, filters
 from rest_framework.decorators import api_view, permission_classes, action
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated, PermissionDenied
+from rest_framework.permissions import IsAuthenticated
 from django.shortcuts import get_object_or_404
 from django.db import models
 from .models import Project, TaskList, ProjectRole, ChatRoom, ChatMessage, ChatAttachment, ChatReaction, ChatNotification
@@ -14,6 +14,7 @@ from organizations.models import Organization, OrganizationMember
 from django.utils import timezone
 from django.core.mail import send_mail
 from django.conf import settings
+from rest_framework.exceptions import PermissionDenied
 import re
 import os
 
