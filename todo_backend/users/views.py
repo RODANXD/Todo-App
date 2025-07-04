@@ -68,7 +68,13 @@ def profile_view(request):
 @permission_classes([IsAuthenticated])
 def update_profile(request):
     user = request.user
-    serializer = UserSerializer(user, data=request.data, partial=True)
+    if request.content_type and 'multipart/form-data' in request.content_type:
+        # Handle file upload
+        serializer = UserSerializer(user, data=request.data, partial=True)
+    else:
+        # Handle JSON data
+        serializer = UserSerializer(user, data=request.data, partial=True)
+    
     if serializer.is_valid():
         serializer.save()
         return Response(serializer.data, status=status.HTTP_200_OK)

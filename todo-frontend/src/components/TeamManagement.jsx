@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { inviteTeamMember, updateMemberRole, removeMember,getTaskStats, getProjectMembers, directprojectinvite, getAllEmails } from '../api/AxiosAuth';
+import { inviteTeamMember, updateMemberRole, removeMember,getTaskStats, getProjectMembers,getOrganization, directprojectinvite, getAllEmails } from '../api/AxiosAuth';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
@@ -62,7 +62,15 @@ const TeamManagement = ({ project, onClose }) => {
         setError(null);
 
         try {
-            await inviteTeamMember(project.id, { email, role });
+            const orgRes = await getOrganization();
+            const orgResults = orgRes.data?.results;
+
+            if (!orgResults || orgResults.length === 0) {
+              throw new Error("Organization not found");
+            }
+
+            const orgId = orgResults[0].id;
+            await inviteTeamMember(orgId, { email, role });
             setEmail('');
             setRole('member');
             toast.success("Invite sent successfully");

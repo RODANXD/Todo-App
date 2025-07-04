@@ -1,7 +1,8 @@
+from organizations.models import OrganizationMember
 from rest_framework import generics, status, filters
 from rest_framework.decorators import api_view, permission_classes, action
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, PermissionDenied
 from django.shortcuts import get_object_or_404
 from django.db import models
 from .models import Project, TaskList, ProjectRole, ChatRoom, ChatMessage, ChatAttachment, ChatReaction, ChatNotification
@@ -33,6 +34,12 @@ class ProjectListCreateView(generics.ListCreateAPIView):
         ).distinct()
     
     def perform_create(self, serializer):
+        user = self.request.user
+        org = user.current_organization
+        if not OrganizationMember.objects.filter(
+            organization=org, user=user, role__in = ['admin','owner']
+        ).exists():
+            raise PermissionDenied("Only organization admins or owners can create projects.")
         project = serializer.save(owner=self.request.user)
         # Create owner role
         ProjectRole.objects.create(project=project, user=self.request.user, role='owner')

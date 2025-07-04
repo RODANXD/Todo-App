@@ -115,7 +115,7 @@ REST_FRAMEWORK = {
 }
 
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=120),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
     'ROTATE_REFRESH_TOKENS': True,
 }
@@ -130,6 +130,7 @@ EMAIL_HOST_USER = 'cholebhature171@gmail.com'
 EMAIL_HOST_PASSWORD = 'tiwo uqla ubpv vdkl'
 DEFAULT_FROM_EMAIL = 'cholebhature171@gmail.com'
 FRONTEND_URL = 'http://localhost:5181'
+SERVER_URL = 'http://116.202.210.102:5181/'
 
 
 

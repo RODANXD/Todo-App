@@ -2,7 +2,9 @@ from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from organizations.models import Organization, OrganizationMember
-
+import uuid
+import base64
+from django.core.files.base import ContentFile
 User = get_user_model()
 class UserRegistrationSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, required=True, validators=[validate_password])
@@ -33,6 +35,8 @@ class UserSerializer(serializers.ModelSerializer):
     
     current_organization = serializers.SerializerMethodField(read_only = True)
     current_organization_id = serializers.IntegerField(write_only=True, required=False)
+    profile_pic = serializers.ImageField(allow_null=True, required=False)
+    
     class Meta:
         model = User
         fields = ('id', 'username', 'email', 'first_name', 'last_name', 'profile_pic',
@@ -57,4 +61,12 @@ class UserSerializer(serializers.ModelSerializer):
                 instance.save()
             except Organization.DoesNotExist:
                 raise serializers.ValidationError("Organization does not exist.")
+            
+        profile_pic = validated_data.pop('profile_pic',None)
+        if profile_pic is not None:
+            if instance.profile_pic:
+                instance.profile_pic.delete(save=False)
+            instance.profile_pic = profile_pic
+            
+            
         return super().update(instance, validated_data)

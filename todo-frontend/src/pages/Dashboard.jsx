@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react"
 import { useauth } from "../store/AuthContext"
 import { useNavigate } from "react-router-dom"
-import { getProjects, getTasksByProject, getTaskStats, updateProject } from "../api/AxiosAuth"
+import { getOrganization, getProjects, getTasksByProject, getTaskStats, updateProject } from "../api/AxiosAuth"
 import KanbanBoard from "../components/kanban-board"
 import { KanbanProvider } from "../components/kanban-provider"
 import TeamManagement from "../components/TeamManagement"
@@ -12,6 +12,7 @@ import { Input } from "../components/ui/input"
 import { Button } from "../components/ui/button"
 import { Textarea } from "../components/ui/textarea"
 import { createProject, deleteProject } from "../api/AxiosAuth"
+
 import {MoreHorizontal,Plus,Users,Calendar,BarChart3,MessageSquare,LogOut,Filter,X,Search,Bell,Settings,Folder,Clock,Target, Menu} from "lucide-react"
 import { toast } from "sonner";
 import { Switch } from "../components/ui/switch"
@@ -65,7 +66,7 @@ const Dashboard = () => {
   const [showFilters, setShowFilters] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
   const [showSettings, setShowSettings] = useState(false)
-  
+  const [orgRole, setOrgRole] = useState(null);
 
   const navigate = useNavigate()
   // const { theme, toggleTheme } = useTheme();
@@ -134,10 +135,10 @@ const [tasksByProject, setTasksByProject] = useState({}) // Cache tasks by proje
 
 const fetchTasksForProject = async (projectId) => {
   // Check cache first
-  if (tasksByProject[projectId]) {
-    setTasks(tasksByProject[projectId])
-    return
-  }
+  // if (tasksByProject[projectId]) {
+  //   setTasks(tasksByProject[projectId])
+  //   return
+  // }
 
   try {
     setLoading(true)
@@ -174,6 +175,20 @@ const fetchTasksForProject = async (projectId) => {
   fetchStats()
 }, [])
 
+
+useEffect(()=>{
+  const fetchOrgrole = async()=>{
+    const orgRes =await getOrganization()
+    const org =  orgRes.data.result?.[0]
+    if(org){
+      const member = org.members.find(m=>m.user === user.id)
+      setOrgRole(member?.role)
+    }
+  }
+  fetchOrgrole()
+},[user]
+)
+
   useEffect(() => {
   if (projects.length > 0 && !selectproject) {
     setSelectProject(projects[0]);
@@ -188,7 +203,7 @@ const onSelect = async (proj) => {
     }
 
     setSelectProject(proj)
-    
+    setTasks([])
     // Fetch tasks for the new project (will use cache if available)
     await fetchTasksForProject(proj.id)
     
@@ -229,38 +244,38 @@ const onSelectWithLoadingState = async (proj) => {
   
 
   const ensureTaskList = async (projectId) => {
-    try {
-      if (!selectproject?.task_lists?.length) {
-        const taskListData = {
-          name: "Default Task List",
-          project: projectId,
-          description: "Default task list for project",
-        }
+  try {
+    const project = projects.find(p => p.id === projectId);
+    if (!project) throw new Error("Project not found");
 
-        const response = await createTaskList(taskListData)
-        if (!response.data) {
-          throw new Error("Failed to create task list - no response data")
-        }
 
-        const updatedProject = {
-          ...selectproject,
-          task_lists: [response.data],
-        }
-        setSelectProject(updatedProject)
-
-        return response.data.id
-      }
-
-      if (!selectproject.task_lists[0]?.id) {
-        throw new Error("Task list exists but has no ID")
-      }
-
-      return selectproject.task_lists[0].id
-    } catch (error) {
-      console.error("Error ensuring task list:", error)
-      throw new Error(`Failed to create task list: ${error.message}`)
+    if (project.task_lists && project.task_lists.length > 0 && project.task_lists[0].id) {
+      return project.task_lists[0].id;
     }
+
+    const taskListData = {
+      name: "Default Task List",
+      project: projectId,
+      description: "Default task list for project",
+    };
+    const response = await createTaskList(taskListData);
+    if (!response.data) throw new Error("Failed to create task list - no response data");
+
+    // Update the project in your projects state
+    setProjects(prev =>
+      prev.map(p =>
+        p.id === projectId
+          ? { ...p, task_lists: [response.data] }
+          : p
+      )
+    );
+
+    return response.data.id;
+  } catch (error) {
+    console.error("Error ensuring task list:", error);
+    throw new Error(`Failed to create task list: ${error.message}`);
   }
+};
 
   const handleEditProject = (project) => {
     event.stopPropagation()
@@ -297,7 +312,7 @@ const onSelectWithLoadingState = async (proj) => {
     try {
       const response = await duplicateproject(projectId)
       const newProject = response.data
-      setProjects([...projects, newProject])
+      setProjects((prev)=>[...prev, newProject])
       setSelectProject(newProject)
       await fetchTasksForProject(newProject)
       toast.success("Project duplicated successfully")
@@ -310,7 +325,7 @@ const onSelectWithLoadingState = async (proj) => {
 
   const openCreateTaskModal = async () => {
     if (!selectproject) {
-      alert("Please select a project first")
+      toast.warning("Please select a project first")
       return
     }
 
@@ -323,7 +338,7 @@ const onSelectWithLoadingState = async (proj) => {
         throw new Error("Could not create or find task list")
       }
     } catch (error) {
-      alert("Error preparing task creation: " + error.message)
+      toast.error("Error preparing task creation: " + error.message)
     }
   }
 
@@ -334,7 +349,7 @@ const onSelectWithLoadingState = async (proj) => {
 
   const handleSubmit = async () => {
     if (!name.trim()) {
-      alert("Project name is required")
+      toast.warning("Project name is required")
       return
     }
 
@@ -348,11 +363,11 @@ const onSelectWithLoadingState = async (proj) => {
       if (editingProject) {
         await updateProject(editingProject.id, projectData)
         setProjects(projects.map((p) => (p.id === editingProject.id ? { ...p, ...projectData } : p)))
-        alert("project updated successfully")
+        toast.success("project updated successfully")
       } else {
         const response = await createProject(projectData)
         setProjects([...projects, response.data])
-        alert("Project created successfully")
+        toast.success("Project created successfully")
         setIsOpen(false)
         setEditingProject(null)
         setName("")
@@ -365,6 +380,20 @@ const onSelectWithLoadingState = async (proj) => {
       console.error("Error saving project:", error)
     }
   }
+  const sortedTasks = useMemo(() => {
+  if (!sortBy || !tasks.length) return tasks;
+  const sorted = [...tasks];
+  if (sortBy === "dueDate") {
+    sorted.sort((a, b) => new Date(a.due_date) - new Date(b.due_date));
+  } else if (sortBy === "priority") {
+    const priorityOrder = { high: 1, medium: 2, low: 3 };
+    sorted.sort((a, b) => (priorityOrder[a.priority] || 4) - (priorityOrder[b.priority] || 4));
+  } else if (sortBy === "status") {
+    const statusOrder = { todo: 1, in_progress: 2, done: 3 };
+    sorted.sort((a, b) => (statusOrder[a.status] || 4) - (statusOrder[b.status] || 4));
+  }
+  return sorted;
+}, [tasks, sortBy]);
 
   const onClose = () => {
     setIsOpen(false)
@@ -374,14 +403,26 @@ const onSelectWithLoadingState = async (proj) => {
     setorganization("")
   }
 
+// const filteredProjects = useMemo(() => {
+//   return projects.filter(
+//     (project) =>
+//       (project.name && project.name.toLowerCase().includes(searchQuery.toLowerCase())) ||
+//       (project.description && project.description.toLowerCase().includes(searchQuery.toLowerCase()))
+//   )
+// }, [projects, searchQuery])
+
 const filteredProjects = useMemo(() => {
   return projects.filter(
-    (project) =>
-      (project.name && project.name.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      (project.description && project.description.toLowerCase().includes(searchQuery.toLowerCase()))
-  )
-}, [projects, searchQuery])
+    (project) => {
+      // Assuming project.roles is an array of {user, role}
+      const myRole = project.roles?.find(r => r.user === user.id)?.role;
+      return myRole !== "viewer"; // Only show if not just a viewer
+    }
+  );
+}, [projects, user]);
 
+
+console.log("org role---------------------------",orgRole)
   if (loading && !projects.length) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 flex items-center justify-center">
@@ -610,6 +651,7 @@ const filteredProjects = useMemo(() => {
                       size="sm"
                       onClick={() => setIsOpen(true)}
                       className="border-slate-300 text-slate-600 hover:bg-slate-50"
+                      disabled={orgRole !== "admin" && orgRole !== "owner"}
                     >
                       <Plus className="w-4 h-4 mr-2" />
                       Create Project
@@ -728,7 +770,7 @@ const filteredProjects = useMemo(() => {
                           <option value="high">High</option>
                         </select>
 
-                        <select
+                        {/* <select
                           value={filters.assignedTo}
                           onChange={(e) => setFilters((prev) => ({ ...prev, assignedTo: e.target.value }))}
                           className="px-3 py-2 bg-[#f7797d] border border-slate-300 rounded-lg text-slate-800 text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-300"
@@ -739,7 +781,7 @@ const filteredProjects = useMemo(() => {
                               {member.name}
                             </option>
                           ))}
-                        </select>
+                        </select> */}
 
                         <select
                           value={sortBy}
@@ -784,7 +826,7 @@ const filteredProjects = useMemo(() => {
                 {/* Kanban Board or Empty State */}
                 {selectproject && tasks.length > 0 ? (
                   <div className="bg-slate-50/30 rounded-xl p-4 border border-slate-200/50">
-                    <KanbanProvider tasks={tasks} filters={filters} sortBy={sortBy}>
+                    <KanbanProvider tasks={sortedTasks} filters={filters} sortBy={sortBy}>
                       <KanbanBoard projectId={selectproject.id} taskListId={selectproject.task_lists?.[0]?.id} />
                     </KanbanProvider>
                   </div>

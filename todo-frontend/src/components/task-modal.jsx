@@ -5,22 +5,30 @@ import { useKanban } from "./kanban-provider"
 import { Button } from "../components/ui/button"
 import { Input } from "../components/ui/input"
 import { Textarea } from "../components/ui/textarea"
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "../components/ui/command"
 // import { toast } from "react-hot-toast";
 import { toast } from "sonner";
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select"
 import { Label } from "../components/ui/label"
-import { CalendarIcon } from "lucide-react"
+import { CalendarIcon,ChevronsUpDown, Check } from "lucide-react"
 import { Calendar } from "../components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "../components/ui/popover"
 import { format } from "date-fns"
-import { createTask, updateTask } from "../api/AxiosAuth" // Import API functions
+import { createTask, updateTask, createTaskList, getTasksByProject } from "../api/AxiosAuth" // Import API functions
 import { createTaskWithList, getProjectMembers } from "../api/AxiosAuth";
 
 // import { updateTask } from "../api/AxiosAuth"
 
-export default function TaskModal({ isOpen, onClose, task, projectId, taskListId }) {
+export default function TaskModal({ isOpen, onClose, task, projectId, taskListId, onSuccess }) {
   const { state, addTask, updateTask: updateTaskInState } = useKanban()
   const [title, setTitle] = useState("")
   const [description, setDescription] = useState("")
@@ -31,6 +39,12 @@ export default function TaskModal({ isOpen, onClose, task, projectId, taskListId
   const [projectMembers, setProjectMembers] = useState([]);
   const [dependency, setDependency] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectproject, setSelectProject] = useState(null)
+  const [, setForceUpdate] = useState(0);
+  const [allTasks, setAllTasks] = useState([])
+  const [open, setOpen] = useState(false);
+
+  // console.log("project id-----------", projectId)
 
 
   useEffect(() => {
@@ -57,101 +71,142 @@ export default function TaskModal({ isOpen, onClose, task, projectId, taskListId
     }
   }, [isOpen, task, state.columns])
 
-  //   useEffect(() => {
-  //   const fetchProjectMembers = async () => {
-  //     try {
-  //       const response = await getProjectMembers(projectId);
-  //       setProjectMembers(response.data);
-  //     } catch (error) {
-  //       console.error('Error fetching project members:', error);
-  //     }
-  //   };
+    useEffect(() => {
+    const fetchProjectMembers = async () => {
+      try {
+        const response = await getProjectMembers(projectId);
+        setProjectMembers(response.data);
+      } catch (error) {
+        console.error('Error fetching project members:', error);
+      }
+    };
 
-  //   if (isOpen && projectId) {
-  //     fetchProjectMembers();
-  //   }
-  // }, [isOpen, projectId]);
+    if (isOpen && projectId) {
+      fetchProjectMembers();
+    }
+  }, [isOpen, projectId]);
+
+
+  useEffect(()=>{
+    const fetchAlltasks = async ()=>{
+      if (!projectId) return;
+      try{
+        const response = await getTasksByProject(projectId)
+        // console.log("project dataaaa -------", response)
+        let tasks = response.data.results || response.data;
+        tasks = tasks.filter(t => t.project === projectId);
+        if (task && task.id){
+          tasks = tasks.filter(t=> t.id!== task.id);
+        }
+        setAllTasks(tasks)
+      } catch (error){
+        toast.error("Error fetching all tasks for dependency:", error)
+      }
+    }
+    if(isOpen) fetchAlltasks();
+
+  },[isOpen,projectId,task])
+const ensureTaskList = async (projectId) => {
+    try {
+      if (!selectproject?.task_lists?.length) {
+        const taskListData = {
+          name: "Default Task List",
+          project: projectId,
+          description: "Default task list for project",
+        }
+
+        const response = await createTaskList(taskListData)
+        if (!response.data) {
+          throw new Error("Failed to create task list - no response data")
+        }
+
+        const updatedProject = {
+          ...selectproject,
+          task_lists: [response.data],
+        }
+        setSelectProject(updatedProject)
+
+        return response.data.id
+      }
+
+      if (!selectproject.task_lists[0]?.id) {
+        throw new Error("Task list exists but has no ID")
+      }
+
+      return selectproject.task_lists[0].id
+    } catch (error) {
+      console.error("Error ensuring task list:", error)
+      throw new Error(`Failed to create task list: ${error.message}`)
+    }
+  }
+
 
   const handleSubmit = async () => {
-  if (!title.trim()){
-     alert("Title is required");
+  if (!title.trim()) {
+    toast.warning("Title is required");
     return;
+  }
+
+  const effectiveProjectId = projectId || selectproject?.id;
+  let effectiveTaskListId = taskListId;
+
+  if (!effectiveTaskListId) {
+    try {
+      effectiveTaskListId = await ensureTaskList(effectiveProjectId);
+    } catch (error) {
+      toast.error("Error preparing task creation: " + error.message);
+      return;
     }
+  }
 
-  if (!taskListId) {
-    alert("No task list available. Please try again.");
+  if (!effectiveTaskListId) {
+    toast.error("No task list available. Please try again.");
     return;
   }
 
-    const taskData = {
-      title: title.trim(),
-      description: description.trim(),
-      status: status || "todo",
-      priority: priority || "medium",
-      due_date: dueDate instanceof Date ? dueDate.toISOString() : null,
-      project: projectId,
-      task_list: taskListId,
-      assigned_to: assignee || null,
-      dependencies: dependency ? [dependency] : []
-  }
+  const taskData = {
+    title: title.trim(),
+    description: description.trim(),
+    status: status || "todo",
+    priority: priority || "medium",
+    due_date: dueDate instanceof Date ? dueDate.toISOString() : null,
+    project: effectiveProjectId,
+    task_list: effectiveTaskListId,
+    assigned_to: assignee || null,
+    dependencies: dependency ? [dependency] : []
+  };
 
-  // console.log("=== TASK CREATION DEBUG ===")
-  // console.log("Task Data being sent:", taskData)
-  // console.log("Project ID:", projectId, "Type:", typeof projectId)
-  // console.log("Task List ID:", taskListId, "Type:", typeof taskListId)
-  // console.log("==========================")
-  
-try {
+  try {
     if (isSubmitting) return;
-      setIsSubmitting(true);
+    setIsSubmitting(true);
+
     if (task) {
-      console.log("task.id: ", task.id)
+      // Update existing task
       const updateResponse = await updateTask(task.id, taskData);
-      onClose()
-      // updateTaskInState({ ...taskData, id: task.id })
-      console.log("Task updated:", updateResponse.data)
+      updateTaskInState({ ...updateResponse.data });
       toast.success("Task updated successfully");
-      // alert("task updated successfully")
-      // window.location.reload();
+      if (typeof onSuccess === "function") onSuccess();
+      if (typeof onClose === "function") onClose();
     } else {
-      const response = await createTaskWithList(taskData)
-      // addTask({ 
-      //   ...response.data, 
-      //   id: response.data.id || crypto.randomUUID(),
-      //   // project_id: parseInt(projectId),
-      //   // task_list_id: parseInt(taskListId)
-      //   project: projectId,
-      //   task_list: taskListId
-      // })
-          if (response.data) {
-            addTask(response.data);
-              toast.success("Task created successfully");
-              // window.location.reload();
-              onClose();
-            }
-      
-      alert("Task created sucessfully")
-      // window.location.reload()
+      // Create new task
+      const response = await createTaskWithList(taskData);
+      if (response.data) {
+        addTask(response.data);
+        toast.success("Task created successfully");
+        if (typeof onSuccess === "function") onSuccess();
+        if (typeof onClose === "function") onClose();
+      }
     }
-    onClose()
   } catch (error) {
-    if (error.response?.data?.task_list) {
-      // Handle invalid task list error
-      alert("Invalid task list. Please refresh the page and try again.");
-      console.error("Task list error:", error.response.data);
-    } else {
-      console.error("Error saving task:", error);
-      alert("Error " + (task ? "updating" : "creating") + " task: " + 
-        (error.response?.data?.detail || error.message));
-    }
     const errorMessage = error.response?.data?.detail || error.message;
-    toast.error(`Error: ${errorMessage}`);
+    toast.error(`Error: ${errorMessage}`)
+  
+    console.error(`Error: ${errorMessage}`);
     console.error("Error saving task:", error);
-  }
-  finally {
+  } finally {
     setIsSubmitting(false);
   }
-}
+};
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="sm:max-w-[500px]">
@@ -226,13 +281,52 @@ try {
                 onChange={(e) => setAssignee(e.target.value)}
                 placeholder="Assignee name"
               />
-              <Label htmlFor="dependecy">dependecy</Label>
-                            <Input
-                id="dependecy"
-                value={dependency}
-                onChange={(e) => setDependency(e.target.value)}
-                placeholder="Dependencies"
+              <div className=" grid gap-2">
+                 <Label htmlFor="dependency">Dependency</Label>
+                 <Popover open={open} onOpenChange={setOpen}>
+  <PopoverTrigger asChild>
+    <Button
+      variant="outline"
+      role="combobox"
+      aria-expanded={open}
+      className="w-full justify-between"
+    >
+      {dependency
+        ? allTasks.find((t) => t.id.toString() === dependency)?.title
+        : "Select dependency"}
+      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+    </Button>
+  </PopoverTrigger>
+  <PopoverContent className="w-full p-0">
+    <Command>
+      <CommandInput placeholder="Search task..." />
+      <CommandList>
+        <CommandEmpty>No task found.</CommandEmpty>
+        <CommandGroup>
+          {allTasks.map((task) => (
+            <CommandItem
+              key={task.id}
+              value={`${task.title} ${task.id}`} // <-- for search
+              onSelect={() => {
+                setDependency(task.id.toString())
+                setOpen(false)
+              }}
+            >
+              <Check
+                className={
+                  "mr-2 h-4 w-4 " +
+                  (dependency === task.id.toString() ? "opacity-100" : "opacity-0")
+                }
               />
+              {task.title}
+            </CommandItem>
+          ))}
+        </CommandGroup>
+      </CommandList>
+    </Command>
+  </PopoverContent>
+</Popover>
+              </div>
 
               {/* <Select value={assignee} onValueChange={setAssignee}>
             <SelectTrigger id="assignee">

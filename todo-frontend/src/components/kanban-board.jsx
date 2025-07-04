@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useReducer } from "react"
 import { useKanban } from "./kanban-provider"
 import TaskCard from "./task-card"
 import TaskModal from "./task-modal"
@@ -9,7 +9,9 @@ import { Button } from "../components/ui/button"
 import { PlusCircle, Save, RotateCcw, MoreHorizontal, Plus } from "lucide-react"
 import { deleteTask } from "../api/AxiosAuth"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../components/ui/dropdown-menu"
+import { getTasksByProject } from "../api/AxiosAuth"; 
 import { updateTaskPriority } from "../api/AxiosAuth";
+import { toast } from "sonner"
 
 export default function KanbanBoard({ projectId, taskListId }) {
   const { state, moveTask, saveData, loadData, deleteColumn } = useKanban()
@@ -19,6 +21,8 @@ export default function KanbanBoard({ projectId, taskListId }) {
   const [editingColumn, setEditingColumn] = useState(null)
   const [draggedTask, setDraggedTask] = useState(null)
   const [dragOverColumnId, setDragOverColumnId] = useState(null)
+  const [, setForceUpdate] = useState(0);
+  const forceUpdate = () => setForceUpdate(n => n + 1);
 
 
   // Debug logs
@@ -84,6 +88,14 @@ export default function KanbanBoard({ projectId, taskListId }) {
     setIsColumnModalOpen(false)
     setEditingColumn(null)
   }
+  const refreshTasks = async () => {
+    try {
+      const response = await getTasksByProject(projectId);
+      setTasks(response.data.results || response.data); // update Kanban state
+    } catch (error) {
+      console.error("Failed to refresh tasks:", error);
+    }
+  };
 
   const handleDeleteColumn = (columnId) => {
     const tasksInColumn = state.tasks.filter((task) => task.status === columnId).length
@@ -101,11 +113,18 @@ export default function KanbanBoard({ projectId, taskListId }) {
     }
   }
 
+
+  const { deleteTask: removeTaskFromState } = useKanban();
+  
   const handleTaskDelete = async(taskid)=>{
     try{
       await deleteTask(taskid);
-      console.log("Task deleted successfully");
-      alert("task deleted successfully")
+      removeTaskFromState(taskid);
+      // console.log("Task deleted successfully");
+      // alert("task deleted successfully")
+      toast.success("task deleted successfully")
+      // await refreshTasks();
+      // forceUpdate();
     }
     catch(error){
       console.log("Error deleting task:", error);
@@ -213,6 +232,7 @@ export default function KanbanBoard({ projectId, taskListId }) {
         task={editingTask} 
         projectId={projectId}
         taskListId={taskListId} // Pass task list ID
+        onSuccess = {refreshTasks}
       />
       <ColumnModal isOpen={isColumnModalOpen} onClose={closeColumnModal} column={editingColumn} />
     </div>

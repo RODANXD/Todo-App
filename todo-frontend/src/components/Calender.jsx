@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import GanttTimeline from "./GanttTimeline"
 import WeekView from "./WeekView"
 import { useNavigate } from "react-router-dom"
+import { DatePickerField } from "./ui/Datepicker"
 // import { Popover } from "bootstrap"
 
 
@@ -33,9 +34,11 @@ export default function CalendarPage() {
   const [newEvent, setNewEvent] = useState({
     title: "",
     date: new Date(),
+    end_date:"",
     type: "",
     project: "",
-    description: ""
+    description: "",
+    location:""
   })
 
   useEffect(() => {
@@ -132,7 +135,7 @@ export default function CalendarPage() {
         start_time: startTime,
         end_time: endTime,
         all_day: false,
-        location: "Conference Room", // Optional: add a field for location if needed
+        location: newEvent.location, // Optional: add a field for location if needed
         project: parseInt(newEvent.project)
       };
       await createEvent(formattedEvent);
@@ -141,9 +144,11 @@ export default function CalendarPage() {
       setNewEvent({
         title: "",
         date: new Date(),
+        end_date: "",
         type: "",
         project: "",
-        description: ""
+        description: "",
+        location: ""
       });
       fetchEvents();
     } catch (error) {
@@ -167,7 +172,7 @@ export default function CalendarPage() {
     try {
       await deleteEvent(eventId);
       toast.success("Event deleted");
-      alert("Event deleted successfully");
+      // alert("Event deleted successfully");
       setSelectedEvent(null);
       fetchEvents();
     } catch (error) {
@@ -423,52 +428,61 @@ const handleUpdateEvent = async () => {
                 </div>
 
                 <div className="grid gap-2">
-                  <Label>Start Date - {format(new Date(selectedEvent.start_time), "yyyy-MM-dd")}</Label>
-                  <div className="flex flex-col sm:flex-row gap-2">
-                    <Input
-                      type="date"
-                      value={format(new Date(selectedEvent.start_time), "yyyy-MM-dd")}
-                      onChange={(e) => setSelectedEvent({ 
-                        ...selectedEvent, 
-                        start_time: new Date(e.target.value).toISOString() 
-                      })}
-                    />
-                    <Input
-                      type="time"
-                      value={format(new Date(selectedEvent.start_time), "HH:mm")}
-                      onChange={(e) => {
-                        const [hours, minutes] = e.target.value.split(":");
-                        const newDate = new Date(selectedEvent.start_time);
-                        newDate.setHours(parseInt(hours), parseInt(minutes));
-                        setSelectedEvent({ ...selectedEvent, start_time: newDate.toISOString() });
-                      }}
-                    />
-                  </div>
-                </div>
+  <Label>
+    Start Date - {format(new Date(selectedEvent.start_time), "yyyy-MM-dd")}
+  </Label>
+  <div className="flex flex-col sm:flex-row gap-2">
+    <DatePickerField
+      value={new Date(selectedEvent.start_time)}
+      onChange={(newDate) => {
+        const original = new Date(selectedEvent.start_time)
+        const updated = new Date(newDate)
+        updated.setHours(original.getHours(), original.getMinutes())
+        setSelectedEvent({ ...selectedEvent, start_time: updated.toISOString() })
+      }}
+    />
+    <Input
+      type="time"
+      value={format(new Date(selectedEvent.start_time), "HH:mm")}
+      onChange={(e) => {
+        const [hours, minutes] = e.target.value.split(":")
+        const newDate = new Date(selectedEvent.start_time)
+        newDate.setHours(Number(hours), Number(minutes))
+        setSelectedEvent({ ...selectedEvent, start_time: newDate.toISOString() })
+      }}
+    />
+  </div>
+</div>
+
 
                 <div className="grid gap-2">
-                  <Label>End Date - {format(new Date(selectedEvent.end_time), "yyyy-MM-dd")}</Label>
-                  <div className="flex flex-col sm:flex-row gap-2">
-                    <Input
-                      type="date"
-                      value={format(new Date(selectedEvent.end_time), "yyyy-MM-dd")}
-                      onChange={(e) => setSelectedEvent({ 
-                        ...selectedEvent, 
-                        end_time: new Date(e.target.value).toISOString() 
-                      })}
-                    />
-                    <Input
-                      type="time"
-                      value={format(new Date(selectedEvent.end_time), "HH:mm")}
-                      onChange={(e) => {
-                        const [hours, minutes] = e.target.value.split(":");
-                        const newDate = new Date(selectedEvent.end_time);
-                        newDate.setHours(parseInt(hours), parseInt(minutes));
-                        setSelectedEvent({ ...selectedEvent, end_time: newDate.toISOString() });
-                      }}
-                    />
-                  </div>
-                </div>
+  <Label>
+    End Date - {format(new Date(selectedEvent.end_time), "yyyy-MM-dd")}
+  </Label>
+  <div className="flex flex-col sm:flex-row gap-2">
+    <DatePickerField
+      value={new Date(selectedEvent.end_time)}
+      onChange={(newDate) => {
+        const original = new Date(selectedEvent.end_time)
+        const updated = new Date(newDate)
+        updated.setHours(original.getHours(), original.getMinutes())
+        setSelectedEvent({ ...selectedEvent, end_time: updated.toISOString()})
+      }}
+    />
+
+    <Input
+      type="time"
+      value={format(new Date(selectedEvent.end_time), "HH:mm")}
+      onChange={(e) => {
+        const [hours, minutes] = e.target.value.split(":")
+        const newDate = new Date(selectedEvent.end_time)
+        newDate.setHours(Number(hours), Number(minutes))
+        setSelectedEvent({ ...selectedEvent, end_time: newDate.toISOString() })
+      }}
+    />
+  </div>
+</div>
+
 
                 <div className="grid gap-2">
                   <Label>Type</Label>
@@ -562,13 +576,19 @@ const handleUpdateEvent = async () => {
               </div>
 
               <div className="grid gap-2">
-                <Label>Date</Label>
+                <Label>Start Date</Label>
                 <div className="flex flex-col sm:flex-row gap-2">
-                  <Input
-                    type="date"
-                    value={format(newEvent.date, "yyyy-MM-dd")}
-                    onChange={(e) => setNewEvent({ ...newEvent, date: new Date(e.target.value) })}
-                  />
+                 <DatePickerField
+  // label="Start Date"
+  value={newEvent.date}
+  onChange={(newDate) => {
+    // preserve time from previous date
+    const dateWithTime = new Date(newDate);
+    dateWithTime.setHours(newEvent.date.getHours(), newEvent.date.getMinutes());
+    setNewEvent({ ...newEvent, date: dateWithTime });
+  }}
+/>
+
                   <Input
                     type="time"
                     value={format(newEvent.date, "HH:mm")}
@@ -581,6 +601,31 @@ const handleUpdateEvent = async () => {
                   />
                 </div>
               </div>
+              <div className="grid gap-2">
+    <Label>End Date</Label>
+    <div className="flex flex-col sm:flex-row gap-2">
+      <DatePickerField
+  value={newEvent.end_date}
+  onChange={(newDate) => {
+    const base = newEvent.end_date || newEvent.date;
+    const dateWithTime = new Date(newDate);
+    dateWithTime.setHours(base.getHours(), base.getMinutes());
+    setNewEvent({ ...newEvent, end_date: dateWithTime });
+  }}
+/>
+      <Input
+        type="time"
+        value={newEvent.end_date ? format(new Date(newEvent.end_date), "HH:mm") : ""}
+        onChange={(e) => {
+          const [hours, minutes] = e.target.value.split(":");
+          const endDate = newEvent.end_date ? new Date(newEvent.end_date) : new Date(newEvent.date);
+          endDate.setHours(Number(hours), Number(minutes));
+          setNewEvent({ ...newEvent, end_date: endDate });
+        }}
+      />
+    </div>
+  </div>
+
 
               <div className="grid gap-2">
                 <Label>Type</Label>
@@ -627,6 +672,14 @@ const handleUpdateEvent = async () => {
                 />
               </div>
             </div>
+            <div className="grid gap-2">
+                  <Label>Event Location</Label>
+                  <Input
+                    value={newEvent.location}
+                    onChange={(e) => setNewEvent({ ...newEvent, location: e.target.value })}
+                    placeholder="Event location"
+                  />
+                </div>
 
             <DialogFooter className="flex flex-col sm:flex-row gap-2">
               <Button variant="outline" onClick={() => setIsEventModalOpen(false)} className="w-full sm:w-auto">

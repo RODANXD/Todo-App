@@ -180,10 +180,11 @@ export function KanbanProvider({ children, tasks=[], filters, sortBy }) {
     toast.success("Task added successfully");
   };
 
-  // const updateTask = (task) => {
-  //   dispatch({ type: "UPDATE_TASK", task });
-  //   toast.success("Task updated successfully");
-  // };
+
+  const updateTask = (updatedTask) => {
+  dispatch({ type: "UPDATE_TASK", task: updatedTask });
+  toast.success("Task updated successfully");
+};
 
   const deleteTask = (taskId) => {
     dispatch({ type: "DELETE_TASK", taskId });
@@ -248,6 +249,7 @@ export function KanbanProvider({ children, tasks=[], filters, sortBy }) {
       toast.error("Failed to Save tasks"+ error.message)
     }
   };
+  
 
   const loadData = () => {
     if (typeof window !== "undefined") {
@@ -264,17 +266,18 @@ export function KanbanProvider({ children, tasks=[], filters, sortBy }) {
   return (
     <KanbanContext.Provider
       value={{
-        state,
-        addTask,
-        updateTaskPriority,
-        deleteTask,
-        moveTask,
-        addColumn,
-        updateColumn,
-        deleteColumn,
-        saveData,
-        loadData,
-      }}
+    state,
+    addTask,
+    updateTask, // ✅ include here
+    updateTaskPriority,
+    deleteTask,
+    moveTask,
+    addColumn,
+    updateColumn,
+    deleteColumn,
+    saveData,
+    loadData,
+  }}
     >
       {children}
     </KanbanContext.Provider>

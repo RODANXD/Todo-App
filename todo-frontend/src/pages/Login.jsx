@@ -38,7 +38,7 @@ export default function Login() {
                 toast.error("Invalid credentials");
                 setError(error.response.data.detail || 'Invalid credentials');
             } else {
-                toast.error("Login failed. Please check your connection.");
+                toast.error("Login failed. check inputs.");
                 setError('Login failed. Please check your connection.');
             }
         }
@@ -53,7 +53,7 @@ export default function Login() {
                     ):(
                         <>
                     <div className="text-center mb-6">
-                        <h2 className="text-4xl font-bold text-gray-900">Holla, Welcome Back</h2>
+                        <h2 className="text-4xl font-bold text-gray-900">Hello, Welcome Back</h2>
                         <p className="text-gray-500 mt-2">Hey, welcome back to your special place</p>
                     </div>
                     {/* {error && (
@@ -93,7 +93,7 @@ export default function Login() {
                               className=" relative right-8 h-6 w-1 p-0"
                               onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                             >
-                              {showConfirmPassword ? <EyeOff className=" w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                              {showConfirmPassword ? <EyeOff className=" w-6 h-6" /> : <Eye className="w-4 h-4" />}
                             </Button>
 
                             </div>

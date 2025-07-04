@@ -60,12 +60,47 @@ axiosinstance.interceptors.request.use(
     }
 );
 
+
+axiosinstance.interceptors.request.use(
+  (config) => {
+    const access = localStorage.getItem('access_token');
+    if (access) {
+      config.headers['Authorization'] = `Bearer ${access}`;
+    }
+    
+    // Don't set Content-Type for FormData - browser will set it automatically with boundary
+    if (config.data instanceof FormData) {
+      delete config.headers['Content-Type'];
+    }
+    
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+export const updateProfile = (data) => {
+  console.log("updateprofile data:", data)
+
+  if (data instanceof FormData) {
+    return axiosinstance.patch('/auth/profile/update/', data,{timeout:20000});
+  }
+
+  return axiosinstance.patch('/auth/profile/update/', data, {
+    headers: {
+      'Content-Type': 'application/json'
+    }
+  });
+};
+
 // Authentication APIs
 export const register = (data) => axiosinstance.post('/users/register/', data);
 export const login = (data) => axiosinstance.post('/users/login/', data);
 export const refreshToken = (refresh) => axiosinstance.post('/users/token/refresh/', { refresh });
 export const getProfile = () => axiosinstance.get('/auth/profile/');
-export const updateProfile = (data) => axiosinstance.patch('/auth/profile/update/', data);
+
+
 export const changePassword = (data) => axiosinstance.patch('/auth/profile/update_password/', data);
 
 // Project APIs
@@ -77,7 +112,8 @@ export const duplicateproject = (projectId) => axiosinstance.post(`/project/${pr
 
 export const createOrganizationid = (data) => axiosinstance.post('/organizations/', data);
 export const getOrganization = (organizationid) => axiosinstance.get(`/organizations/`);
-// export const updateOrganization = (organizationid, data) => axiosinstance.put(`/organizations/${organizationid}/`, 
+export const updateOrganization = (organizationid, data) => axiosinstance.patch(`/organizations/${organizationid}/`, data) 
+// export const createOrganizatio = (organizationid, data) => axiosinstance.patch(`/organizations/${organizationid}/`, data) 
 // TaskList APIs
 export const getTaskLists = (projectId) => axiosinstance.get(`/tasks/?tasklist=${projectId}`);
 export const validateTaskList = async (taskListId) => {
@@ -184,8 +220,8 @@ export const updateTaskStatus = (taskId, status) => axiosinstance.patch(`/tasks/
 export const getProjectMembers = (projectId) => 
   axiosinstance.get(`/project/${projectId}/members/`);
 
-export const inviteTeamMember = async (projectId, data) => {
-    return await axiosinstance.post(`/organizations/${projectId}/invitations/`, data);
+export const inviteTeamMember = async (orgId, data) => {
+    return await axiosinstance.post(`/organizations/${orgId}/invitations/`, data);
 };
 export const directprojectinvite = async (projectId, data) => {
   console.log("Direct invite data:", data);

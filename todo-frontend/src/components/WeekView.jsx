@@ -68,8 +68,8 @@ export default function WeekView({ selectedDate, events, onEventDrag, projects =
     const handleDeleteEvent = async (eventId) => {
       try {
         await deleteEvent(eventId);
-        toast.success("Event deleted");
-        alert("Event deleted successfully");
+        toast.success("Event deleted successfully");
+        // alert("Event deleted successfully");
         setSelectedEvent(null);
         fetchEvents();
       } catch (error) {

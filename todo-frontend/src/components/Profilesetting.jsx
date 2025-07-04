@@ -9,6 +9,8 @@ import { Label } from "../components/ui/label"
 import { Textarea } from "../components/ui/textarea"
 import { Avatar, AvatarFallback, AvatarImage } from "../components/ui/avatar"
 import { Badge } from "../components/ui/badge"
+import { toast } from "sonner";
+
 import { Switch } from "../components/ui/switch"
 import { Separator } from "../components/ui/separator"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs"
@@ -55,14 +57,14 @@ import {
   Palette,
   Database,
 } from "lucide-react"
-
-import { getProfile, updateProfile, changePassword, getOrganization } from "../api/AxiosAuth"
+import { getProfile, updateProfile, changePassword, getOrganization, createOrganizationid } from "../api/AxiosAuth"
 import {
   inviteTeamMember,
   updateMemberRole,
   removeMember,
   getProjectMembers,
   directprojectinvite,
+  updateOrganization,
 } from "../api/AxiosAuth";
 
 const SettingsProfile = ({ onClose, project }) => {
@@ -92,14 +94,15 @@ const SettingsProfile = ({ onClose, project }) => {
     confirmPassword: "",
   })
 
+  console.log("profile avatar:", profileData.avatar)
   // Organization state
   const [orgData, setOrgData] = useState({
-    name: "Acme Corporation",
-    description: "Building the future of project management",
+    name: "",
+    description: "",
     logo: null,
-    timezone: "America/New_York",
-    website: "https://acme.com",
-    industry: "Technology",
+    timezone: "",
+    website: "",
+    industry: "",
   })
 
   // Members state
@@ -234,38 +237,7 @@ const SettingsProfile = ({ onClose, project }) => {
   };
 
   
-  const handleProfileUpdate = async () => {
-    setLoading(true)
-    try {
-        const data = {
-        first_name: profileData.firstName,
-        last_name: profileData.lastName,
-        email: profileData.email,
-        username: profileData.username,
-        bio: profileData.bio,
-        avatar: profileData.avatar,
-      };
-      console.log("profiledata", data)
-      await updateProfile(data);
-      // Simulate API call
-      if (profileData.currentPassword && profileData.newPassword && profileData.confirmPassword) {
-        if (profileData.newPassword !== profileData.confirmPassword) {
-          alert("New passwords do not match!");
-        } else {
-          await changePassword({
-            old_password: profileData.currentPassword,
-            new_password: profileData.newPassword,
-          });
-        }
-      }
-      alert("Profile updated successfully!");
-    } catch (error) {
-      console.error("Error updating profile:", error)
-      alert("Failed to update profile")
-    } finally {
-      setLoading(false)
-    }
-  }
+  
 
   useEffect(() => {
 
@@ -282,7 +254,8 @@ const SettingsProfile = ({ onClose, project }) => {
             email: profileData.email || "",
             username: profileData.username || "",
             bio: profileData.bio || "",
-            avatar: profileData.avatar || null,
+            avatar: profileData.profile_pic || null,
+            avatarPreview: profileData.profile_pic || null, 
         }));
 
         const orgRes = await getOrganization();
@@ -311,16 +284,96 @@ fetchprofile();
 
   },[])
 
+
+  const handleProfileUpdate = async () => {
+    setLoading(true)
+    try {
+
+      const formdata = new FormData()
+      formdata.append('first_name', profileData.firstName)
+      formdata.append('last_name', profileData.lastName)
+      formdata.append('email', profileData.email)
+      formdata.append('username', profileData.username)
+      formdata.append('bio', profileData.bio)
+
+
+      if (profileData.avatar instanceof File){
+        formdata.append('profile_pic', profileData.avatar)
+      }
+      // console.log("profiledata", formdata)
+      await updateProfile(formdata);
+
+
+      // Simulate API call
+      if (profileData.currentPassword && profileData.newPassword && profileData.confirmPassword) {
+        if (profileData.newPassword !== profileData.confirmPassword) {
+          toast.warning("New passwords do not match!")
+          // alert("New passwords do not match!");
+        } else {
+          await changePassword({
+            old_password: profileData.currentPassword,
+            new_password: profileData.newPassword,
+          });
+        }
+      }
+      // alert("Profile updated successfully!");
+      toast.success("Profile updated successfully!")
+    
+    } catch (error) {
+      console.error("Error updating profile:", error)
+      toast.error("Failed to update profile")
+    } finally {
+      setLoading(false)
+    }
+  }
+  const handlecreateorg = async () => {
+  setLoading(true);
+  try {
+    if (!orgData.name || !orgData.description || !orgData.slug) {
+      toast.warning("Please fill in all required fields.");
+      return;
+    }
+
+    const response = await createOrganizationid({
+      name: orgData.name,
+      description: orgData.description,
+      slug: orgData.slug,
+    });
+
+    toast.success("Organization created successfully!");
+    console.log("Created Org:", response.data);
+  } catch (error) {
+    console.error("Organization creation failed", error);
+    toast.error(error.response?.data?.message || "Failed to create organization");
+  } finally {
+    setLoading(false);
+  }
+};
+
+
   const handleOrgUpdate = async () => {
     setLoading(true)
     try {
+      if(!orgData.id){
+      toast.error("Organization ID is missing!");
+      setLoading(false);
+      return;
+      }
       // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000))
+      await updateOrganization(orgData.id, {
+      name: orgData.name,
+      description: orgData.description,
+      slug: orgData.slug,
+    });
       console.log("Organization updated:", orgData)
-      alert("Organization settings updated successfully!")
+      // alert("Organization settings updated successfully!")
+      toast.success("Organization settings updated successfully!")
     } catch (error) {
       console.error("Error updating organization:", error)
-      alert("Failed to update organization settings")
+      // alert("Failed to update organization settings")
+      toast.error("Failed to update organization settings")
+      toast.error(`Error:${error.response.data.slug}`)
+
     } finally {
       setLoading(false)
     }
@@ -328,7 +381,8 @@ fetchprofile();
 
   const handleInviteMember = async () => {
     if (!inviteForm.email) {
-      alert("Email is required")
+      // alert("Email is required")
+      toast.warning("Email is required")
       return
     }
 
@@ -351,10 +405,12 @@ fetchprofile();
       setMembers([...members, newMember])
       setInviteForm({ email: "", role: "Member", message: "" })
       setInviteDialogOpen(false)
-      alert("Invitation sent successfully!")
+      // alert("Invitation sent successfully!")
+      toast.success("Invitation sent successfully!")
     } catch (error) {
       console.error("Error inviting member:", error)
-      alert("Failed to send invitation")
+      // alert("Failed to send invitation")
+      toast.error("Failed to send invitation")
     } finally {
       setLoading(false)
     }
@@ -368,18 +424,19 @@ fetchprofile();
 
       if (action === "remove") {
         setMembers(members.filter((m) => m.id !== memberId))
-        alert("Member removed successfully!")
+        // alert("Member removed successfully!")
+        toast.success("Member removed successfully!")
       } else if (action === "suspend") {
         setMembers(
           members.map((m) =>
             m.id === memberId ? { ...m, status: m.status === "Suspended" ? "Active" : "Suspended" } : m,
           ),
         )
-        alert(`Member ${action}ed successfully!`)
+        toast.success(`Member ${action}ed successfully!`)
       }
     } catch (error) {
       console.error(`Error ${action}ing member:`, error)
-      alert(`Failed to ${action} member`)
+      toast.error(`Failed to ${action} member`)
     } finally {
       setLoading(false)
     }
@@ -395,15 +452,20 @@ fetchprofile();
   const handleAvatarUpload = (event, type = "profile") => {
     const file = event.target.files[0]
     if (file) {
-      const reader = new FileReader()
-      reader.onload = (e) => {
-        if (type === "profile") {
-          setProfileData((prev) => ({ ...prev, avatar: e.target.result }))
-        } else {
-          setOrgData((prev) => ({ ...prev, logo: e.target.result }))
+      if (type === "profile"){
+        const previewUrl = URL.createObjectURL(file)
+        setProfileData((prev)=>({
+          ...prev,
+          avatar:file,
+          avatarPreview:previewUrl 
+        }))
+      } else{
+        const reader = new FileReader()
+        reader.onload = (e) => {
+        setOrgData((prev) => ({ ...prev, logo: e.target.result }))
         }
+        reader.readAsDataURL(file)
       }
-      reader.readAsDataURL(file)
     }
   }
 
@@ -472,20 +534,6 @@ fetchprofile();
                   <Building2 className="w-4 h-4 mr-3" />
                   Organization
                 </TabsTrigger>
-                {/* <TabsTrigger
-                  value="members"
-                  className="w-full justify-start data-[state=active]:bg-blue-100 data-[state=active]:text-blue-700"
-                >
-                  <Users className="w-4 h-4 mr-3" />
-                  Team Members
-                </TabsTrigger>
-                <TabsTrigger
-                  value="features"
-                  className="w-full justify-start data-[state=active]:bg-blue-100 data-[state=active]:text-blue-700"
-                >
-                  <Zap className="w-4 h-4 mr-3" />
-                  Feature Flags
-                </TabsTrigger> */}
               </TabsList>
             </div>
 
@@ -502,12 +550,23 @@ fetchprofile();
                       <CardContent className="p-6">
                         <div className="flex max-xs:flex-col max-xs:gap-3 items-center space-x-6">
                           <div className="relative">
-                            <Avatar className="w-24 h-24">
-                              <AvatarImage src={profileData.avatar || "/api/placeholder/96/96"} />
-                              <AvatarFallback className="bg-blue-100 text-blue-600 text-2xl font-semibold">
-                                {profileData.firstName?.charAt(0) || user?.username?.charAt(0)?.toUpperCase() || "U"}
-                              </AvatarFallback>
-                            </Avatar>
+                          <Avatar className="w-24 h-24">
+                                  {profileData.avatarPreview ? (
+                                    <AvatarImage 
+                                      src={
+                                        typeof profileData.avatarPreview === "string" && profileData.avatarPreview.startsWith("blob:")
+                                          ? profileData.avatarPreview
+                                          : `http://116.202.210.102:6969${profileData.avatarPreview}`
+                                      }
+                                      alt={`${profileData.firstName} ${profileData.lastName}`}
+                                    />
+                                  ) : (
+                                    <AvatarFallback className="bg-blue-100 text-blue-600 text-2xl font-semibold">
+                                      {profileData.firstName?.charAt(0) || user?.username?.charAt(0)?.toUpperCase() || "U"}
+                                    </AvatarFallback>
+                                  )}
+                                </Avatar>
+                              
                             <label className="absolute -bottom-2 -right-2 p-2 bg-blue-600 text-white rounded-full cursor-pointer hover:bg-blue-700 transition-colors">
                               <Camera className="w-4 h-4" />
                               <input
@@ -700,7 +759,7 @@ fetchprofile();
                     <Card className="mb-6">
                       <CardContent className="p-6">
                         <div className="flex items-center max-xs:flex-col max-xs:gap-3 space-x-6">
-                          <div className="relative">
+                          {/* <div className="relative">
                             <div className="w-24 h-24 bg-slate-100 rounded-xl flex items-center justify-center overflow-hidden">
                               {orgData.logo ? (
                                 <img
@@ -721,7 +780,7 @@ fetchprofile();
                                 onChange={(e) => handleAvatarUpload(e, "org")}
                               />
                             </label>
-                          </div>
+                          </div> */}
                           <div>
                             <h4 className="text-xl font-semibold text-slate-800">{orgData.name}</h4>
                             <p className="text-slate-600">{orgData.description}</p>
@@ -835,358 +894,70 @@ fetchprofile();
                     </div>
                   </div>
                 </div>
+                {/* Divider */}
+<Separator className="my-6" />
+
+{/* Create Organization Section */}
+<div>
+  <h3 className="text-lg font-semibold text-slate-800 mb-4">Create New Organization</h3>
+  <Card>
+    <CardHeader>
+      <CardTitle>Create Organization</CardTitle>
+      <CardDescription>Fill out the form below to create a new organization.</CardDescription>
+    </CardHeader>
+    <CardContent className="space-y-4">
+      <div className="space-y-2">
+        <Label htmlFor="newOrgName">Organization Name</Label>
+        <Input
+          id="newOrgName"
+          value={orgData.name}
+          onChange={(e) => setOrgData((prev) => ({ ...prev, name: e.target.value }))}
+          placeholder="Enter new organization name"
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="newOrgDescription">Description</Label>
+        <Textarea
+          id="newOrgDescription"
+          value={orgData.description}
+          onChange={(e) => setOrgData((prev) => ({ ...prev, description: e.target.value }))}
+          placeholder="Describe your organization"
+          rows={3}
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="newOrgSlug">Slug</Label>
+        <Input
+          id="newOrgSlug"
+          value={orgData.slug}
+          onChange={(e) => setOrgData((prev) => ({ ...prev, slug: e.target.value }))}
+          placeholder="example-org-slug"
+        />
+      </div>
+
+      <div className="flex justify-end space-x-3">
+        <Button onClick={handlecreateorg} disabled={loading}>
+          {loading ? (
+            <>
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+              Creating...
+            </>
+          ) : (
+            <>
+              <Save className="w-4 h-4 mr-2" />
+              Create Organization
+            </>
+          )}
+        </Button>
+      </div>
+    </CardContent>
+  </Card>
+</div>
+
               </TabsContent>
 
-              {/* Team Members Tab */}
-              <TabsContent value="members" className="p-6 space-y-6 m-0">
-                <div className="space-y-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="text-lg font-semibold text-slate-800">Team Members</h3>
-                      <p className="text-slate-600">Manage your organization's team members and their roles</p>
-                    </div>
-                    <Dialog open={inviteDialogOpen} onOpenChange={setInviteDialogOpen}>
-                      <DialogTrigger asChild>
-                        <Button className="bg-blue-600 hover:bg-blue-700">
-                          <UserPlus className="w-4 h-4 mr-2" />
-                          Invite Member
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent>
-                        <DialogHeader>
-                          <DialogTitle>Invite Team Member</DialogTitle>
-                          <DialogDescription>Send an invitation to join your organization</DialogDescription>
-                        </DialogHeader>
-                        <div className="space-y-4">
-                          <div className="space-y-2">
-                            <Label htmlFor="inviteEmail">Email Address</Label>
-                            <Input
-                              id="inviteEmail"
-                              type="email"
-                              value={inviteForm.email}
-                              onChange={(e) => setInviteForm((prev) => ({ ...prev, email: e.target.value }))}
-                              placeholder="Enter email address"
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label htmlFor="inviteRole">Role</Label>
-                            <Select
-                              value={inviteForm.role}
-                              onValueChange={(value) => setInviteForm((prev) => ({ ...prev, role: value }))}
-                            >
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select role" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="Member">Member</SelectItem>
-                                <SelectItem value="Admin">Admin</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <div className="space-y-2">
-                            <Label htmlFor="inviteMessage">Personal Message (Optional)</Label>
-                            <Textarea
-                              id="inviteMessage"
-                              value={inviteForm.message}
-                              onChange={(e) => setInviteForm((prev) => ({ ...prev, message: e.target.value }))}
-                              placeholder="Add a personal message to the invitation"
-                              rows={3}
-                            />
-                          </div>
-                        </div>
-                        <DialogFooter>
-                          <Button variant="outline" onClick={() => setInviteDialogOpen(false)}>
-                            Cancel
-                          </Button>
-                          <Button onClick={handleInviteMember} disabled={loading}>
-                            {loading ? (
-                              <>
-                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                                Sending...
-                              </>
-                            ) : (
-                              "Send Invitation"
-                            )}
-                          </Button>
-                        </DialogFooter>
-                      </DialogContent>
-                    </Dialog>
-                  </div>
-
-                  <Card>
-                    <CardContent className="p-0">
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Member</TableHead>
-                            <TableHead>Role</TableHead>
-                            <TableHead>Status</TableHead>
-                            <TableHead>Joined</TableHead>
-                            <TableHead>Last Active</TableHead>
-                            <TableHead className="text-right">Actions</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {members.map((member) => (
-                            <TableRow key={member.id}>
-                              <TableCell>
-                                <div className="flex items-center space-x-3">
-                                  <Avatar className="w-8 h-8">
-                                    <AvatarImage src={member.avatar || "/placeholder.svg"} />
-                                    <AvatarFallback className="bg-blue-100 text-blue-600 text-sm">
-                                      {member.name? member.name.split(" ").map((n) => n[0]).join(""): member.email? member.email[0].toUpperCase(): "U"}
-                                    </AvatarFallback>
-                                  </Avatar>
-                                  <div>
-                                    <div className="font-medium text-slate-800">{member.name}</div>
-                                    <div className="text-sm text-slate-600">{member.email}</div>
-                                  </div>
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                <Badge variant="outline" className={getRoleColor(member.role)}>
-                                  {member.role === "Owner" && <Crown className="w-3 h-3 mr-1" />}
-                                  {member.role === "Admin" && <Shield className="w-3 h-3 mr-1" />}
-                                  {member.role}
-                                </Badge>
-                              </TableCell>
-                              <TableCell>
-                                <Badge variant="outline" className={getStatusColor(member.status)}>
-                                  {member.status}
-                                </Badge>
-                              </TableCell>
-                              <TableCell className="text-slate-600">{member.joinedAt}</TableCell>
-                              <TableCell className="text-slate-600">{member.lastActive}</TableCell>
-                              <TableCell className="text-right">
-                                {member.role !== "Owner" && (
-                                  <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                      <Button variant="ghost" size="sm">
-                                        <MoreHorizontal className="w-4 h-4" />
-                                      </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end">
-                                      <DropdownMenuItem
-                                        onClick={() => handleMemberAction(member.id, "suspend")}
-                                        className="text-amber-600 focus:text-amber-600"
-                                      >
-                                        <UserX className="w-4 h-4 mr-2" />
-                                        {member.status === "Suspended" ? "Unsuspend" : "Suspend"}
-                                      </DropdownMenuItem>
-                                      <DropdownMenuItem
-                                        onClick={() => handleMemberAction(member.id, "remove")}
-                                        className="text-red-600 focus:text-red-600"
-                                      >
-                                        <Trash2 className="w-4 h-4 mr-2" />
-                                        Remove
-                                      </DropdownMenuItem>
-                                    </DropdownMenuContent>
-                                  </DropdownMenu>
-                                )}
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </CardContent>
-                  </Card>
-                </div>
-              </TabsContent>
-
-              {/* Feature Flags Tab */}
-              <TabsContent value="features" className="p-6 space-y-6 m-0">
-                <div className="space-y-6">
-                  <div>
-                    <h3 className="text-lg font-semibold text-slate-800 mb-2">Feature Flags</h3>
-                    <p className="text-slate-600 mb-6">
-                      Enable or disable experimental features and advanced functionality
-                    </p>
-
-                    <div className="grid gap-6">
-                      {/* UI & Experience */}
-                      <Card>
-                        <CardHeader>
-                          <CardTitle className="flex items-center space-x-2">
-                            <Palette className="w-5 h-5 text-blue-600" />
-                            <span>UI & Experience</span>
-                          </CardTitle>
-                          <CardDescription>Customize your interface and user experience</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                          <div className="flex items-center justify-between">
-                            <div className="space-y-1">
-                              <div className="font-medium text-slate-800">Dark Mode</div>
-                              <div className="text-sm text-slate-600">Switch to dark theme interface</div>
-                            </div>
-                            <Switch
-                              checked={featureFlags.darkMode}
-                              onCheckedChange={() => handleFeatureToggle("darkMode")}
-                            />
-                          </div>
-                          <Separator />
-                          <div className="flex items-center justify-between">
-                            <div className="space-y-1">
-                              <div className="font-medium text-slate-800">Custom Themes</div>
-                              <div className="text-sm text-slate-600">Create and apply custom color themes</div>
-                            </div>
-                            <Switch
-                              checked={featureFlags.customThemes}
-                              onCheckedChange={() => handleFeatureToggle("customThemes")}
-                            />
-                          </div>
-                        </CardContent>
-                      </Card>
-
-                      {/* Collaboration */}
-                      <Card>
-                        <CardHeader>
-                          <CardTitle className="flex items-center space-x-2">
-                            <Users className="w-5 h-5 text-green-600" />
-                            <span>Collaboration</span>
-                          </CardTitle>
-                          <CardDescription>Team collaboration and communication features</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                          <div className="flex items-center justify-between">
-                            <div className="space-y-1">
-                              <div className="font-medium text-slate-800">Real-time Collaboration</div>
-                              <div className="text-sm text-slate-600">See live updates from team members</div>
-                            </div>
-                            <Switch
-                              checked={featureFlags.realTimeCollaboration}
-                              onCheckedChange={() => handleFeatureToggle("realTimeCollaboration")}
-                            />
-                          </div>
-                          <Separator />
-                          <div className="flex items-center justify-between">
-                            <div className="space-y-1">
-                              <div className="font-medium text-slate-800">Advanced Notifications</div>
-                              <div className="text-sm text-slate-600">
-                                Enhanced notification system with smart filtering
-                              </div>
-                            </div>
-                            <Switch
-                              checked={featureFlags.advancedNotifications}
-                              onCheckedChange={() => handleFeatureToggle("advancedNotifications")}
-                            />
-                          </div>
-                        </CardContent>
-                      </Card>
-
-                      {/* AI & Analytics */}
-                      <Card>
-                        <CardHeader>
-                          <CardTitle className="flex items-center space-x-2">
-                            <Zap className="w-5 h-5 text-purple-600" />
-                            <span>AI & Analytics</span>
-                          </CardTitle>
-                          <CardDescription>Artificial intelligence and advanced analytics features</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                          <div className="flex items-center justify-between">
-                            <div className="space-y-1">
-                              <div className="font-medium text-slate-800">AI Assistant</div>
-                              <div className="text-sm text-slate-600">Get AI-powered suggestions and insights</div>
-                            </div>
-                            <Switch
-                              checked={featureFlags.aiAssistant}
-                              onCheckedChange={() => handleFeatureToggle("aiAssistant")}
-                            />
-                          </div>
-                          <Separator />
-                          <div className="flex items-center justify-between">
-                            <div className="space-y-1">
-                              <div className="font-medium text-slate-800">Advanced Analytics</div>
-                              <div className="text-sm text-slate-600">Detailed project analytics and reporting</div>
-                            </div>
-                            <Switch
-                              checked={featureFlags.advancedAnalytics}
-                              onCheckedChange={() => handleFeatureToggle("advancedAnalytics")}
-                            />
-                          </div>
-                        </CardContent>
-                      </Card>
-
-                      {/* Developer Features */}
-                      <Card>
-                        <CardHeader>
-                          <CardTitle className="flex items-center space-x-2">
-                            <Database className="w-5 h-5 text-orange-600" />
-                            <span>Developer Features</span>
-                          </CardTitle>
-                          <CardDescription>Advanced features for developers and integrations</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                          <div className="flex items-center justify-between">
-                            <div className="space-y-1">
-                              <div className="font-medium text-slate-800">API Access</div>
-                              <div className="text-sm text-slate-600">Enable REST API access for integrations</div>
-                            </div>
-                            <Switch
-                              checked={featureFlags.apiAccess}
-                              onCheckedChange={() => handleFeatureToggle("apiAccess")}
-                            />
-                          </div>
-                          <Separator />
-                          <div className="flex items-center justify-between">
-                            <div className="space-y-1">
-                              <div className="font-medium text-slate-800">Webhooks</div>
-                              <div className="text-sm text-slate-600">
-                                Send real-time notifications to external services
-                              </div>
-                            </div>
-                            <Switch
-                              checked={featureFlags.webhooks}
-                              onCheckedChange={() => handleFeatureToggle("webhooks")}
-                            />
-                          </div>
-                          <Separator />
-                          <div className="flex items-center justify-between">
-                            <div className="space-y-1">
-                              <div className="font-medium text-slate-800">Data Export</div>
-                              <div className="text-sm text-slate-600">Export your data in various formats</div>
-                            </div>
-                            <Switch
-                              checked={featureFlags.dataExport}
-                              onCheckedChange={() => handleFeatureToggle("dataExport")}
-                            />
-                          </div>
-                        </CardContent>
-                      </Card>
-
-                      {/* Beta Features */}
-                      <Card className="border-amber-200 bg-amber-50/50">
-                        <CardHeader>
-                          <CardTitle className="flex items-center space-x-2">
-                            <AlertTriangle className="w-5 h-5 text-amber-600" />
-                            <span>Beta Features</span>
-                          </CardTitle>
-                          <CardDescription>Experimental features that are still in development</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                          <div className="flex items-center justify-between">
-                            <div className="space-y-1">
-                              <div className="font-medium text-slate-800 flex items-center space-x-2">
-                                <span>Beta Features Access</span>
-                                <Badge variant="outline" className="bg-amber-100 text-amber-800 border-amber-300">
-                                  Beta
-                                </Badge>
-                              </div>
-                              <div className="text-sm text-slate-600">
-                                Get early access to new features before they're released
-                              </div>
-                            </div>
-                            <Switch
-                              checked={featureFlags.betaFeatures}
-                              onCheckedChange={() => handleFeatureToggle("betaFeatures")}
-                            />
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </div>
-                  </div>
-                </div>
-              </TabsContent>
             </div>
           </Tabs>
         </div>
