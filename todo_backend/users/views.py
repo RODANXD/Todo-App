@@ -137,3 +137,12 @@ def all_user_emails(request):
     users = User.objects.all()
     emails = [user.email for user in users]
     return Response(emails, status=status.HTTP_200_OK)
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def all_username(request):
+    User = get_user_model()
+    users = User.objects.all()
+    usernames = [user.username for user in users]
+    return Response(usernames, status=status.HTTP_200_OK)

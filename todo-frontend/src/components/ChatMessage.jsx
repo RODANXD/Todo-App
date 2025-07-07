@@ -13,6 +13,7 @@ const ChatMessage = ({ message, currentUser, onReaction }) => {
         ? format(new Date(message.timestamp), 'HH:mm')
         : '';
 
+    
     const handleEmojiSelect = (emojiData) => {
         onReaction(message.id, emojiData.emoji);
         setShowEmojiPicker(false);

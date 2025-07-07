@@ -1,7 +1,7 @@
 import React from 'react'
 import axios from 'axios'
 
-const baseURL = 'http://116.202.210.102:6969/api/'
+const baseURL = 'http://116.202.210.102:6970/api/'
 // const baseURL = 'https://3njncz1t-8000.inc1.devtunnels.ms/api/'
 
 
@@ -217,9 +217,22 @@ export const getTaskDetails = (taskId) => axiosinstance.get(`/tasks/${taskId}/`)
 export const updateTaskStatus = (taskId, status) => axiosinstance.patch(`/tasks/${taskId}/`, { status });
 
 
+
+
+// Task Approval Api
+export const createTaskRequest = (data) => axiosinstance.post('/task-requests/', data);
+export const getTaskRequests = () => axiosinstance.get('/task-requests/');
+export const approveTaskRequest = (id) => axiosinstance.post(`/task-requests/${id}/approve/`);
+export const rejectTaskRequest = (id) => axiosinstance.post(`/task-requests/${id}/reject/`);
+
+
+
+
+
+
+
 export const getProjectMembers = (projectId) => 
   axiosinstance.get(`/project/${projectId}/members/`);
-
 export const inviteTeamMember = async (orgId, data) => {
     return await axiosinstance.post(`/organizations/${orgId}/invitations/`, data);
 };
@@ -255,12 +268,15 @@ export const getTaskStats = async () => {
 export const getAllEmails = async () =>{
   return await axiosinstance.get('/auth/profile/all_user_emails/')
 }
+export const getalluser = async () =>{
+  return await axiosinstance.get('/auth/profile/all_username/')
+}
 
 
 export const uploadChatAttachment = (projectId, formData) => {
   const access = localStorage.getItem('access_token');
   return axios.post(
-    `http://116.202.210.102:6969/api/project/${projectId}/chat/attachments/`,
+    `http://116.202.210.102:6970/api/project/${projectId}/chat/attachments/`,
     formData,
     {
       headers: {

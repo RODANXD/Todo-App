@@ -169,6 +169,7 @@ const SettingsProfile = ({ onClose, project }) => {
     role: "Member",
     message: "",
   })
+  const [orgRole, setOrgRole] = useState(null);
 
     useEffect(() => {
     if (project && project.id) {
@@ -245,6 +246,8 @@ const SettingsProfile = ({ onClose, project }) => {
     try {
         const profileRes = await getProfile();
         const profileData = profileRes.data;
+        const role = profileRes.data?.role; // Adjust this line as needed
+        setOrgRole(role);
         console.log("profile data", profileData);
 
         setProfileData((prev) => ({
@@ -527,13 +530,23 @@ fetchprofile();
                   <User className="w-4 h-4 mr-3" />
                   Profile Settings
                 </TabsTrigger>
-                <TabsTrigger
+
+                 {orgRole === "admin" && (
+                  <TabsTrigger
                   value="organization"
                   className="w-full justify-start data-[state=active]:bg-blue-100 data-[state=active]:text-blue-700"
                 >
                   <Building2 className="w-4 h-4 mr-3" />
                   Organization
-                </TabsTrigger>
+                </TabsTrigger> 
+                 )}
+                {/* <TabsTrigger
+                  value="organization"
+                  className="w-full justify-start data-[state=active]:bg-blue-100 data-[state=active]:text-blue-700"
+                >
+                  <Building2 className="w-4 h-4 mr-3" />
+                  Organization
+                </TabsTrigger> */}
               </TabsList>
             </div>
 
@@ -556,7 +569,7 @@ fetchprofile();
                                       src={
                                         typeof profileData.avatarPreview === "string" && profileData.avatarPreview.startsWith("blob:")
                                           ? profileData.avatarPreview
-                                          : `http://116.202.210.102:6969${profileData.avatarPreview}`
+                                          : `http://116.202.210.102:6970${profileData.avatarPreview}`
                                       }
                                       alt={`${profileData.firstName} ${profileData.lastName}`}
                                     />
@@ -585,7 +598,7 @@ fetchprofile();
                             <p className="text-slate-600">{profileData.email}</p>
                             <Badge variant="secondary" className="mt-2">
                               <Crown className="w-3 h-3 mr-1" />
-                              Premium Member
+                              {orgRole}
                             </Badge>
                           </div>
                         </div>

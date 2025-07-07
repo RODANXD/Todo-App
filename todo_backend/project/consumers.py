@@ -82,7 +82,13 @@ class ChatConsumer(AsyncWebsocketConsumer):
         file_data = data.get('file')
         
         if message_type == 'message':
-            await self.save_msg(username, message)
+            msg = await self.save_msg(username, message)
+            if not msg:
+                await self.send(text_data=json.dumps({
+                    "error": f"Invalid sender username: {username}"
+                }))
+                return
+
         
         # Send message to room group
         await self.channel_layer.group_send(
@@ -103,21 +109,34 @@ class ChatConsumer(AsyncWebsocketConsumer):
     
     @database_sync_to_async
     def save_msg(self, username, message):
-        user = get_user_model().objects.get(username= username)
-        chat_room = ChatRoom.objects.get(id= self.room_id)
-        msg =ChatMessage.objects.create(author= user, room= chat_room, content= message)
+        try:
+            user = get_user_model().objects.get(username=username)
+        except get_user_model().DoesNotExist:
+            print(f"[ERROR] Sender user '{username}' not found")
+            return None
+
+        chat_room = ChatRoom.objects.get(id=self.room_id)
+        msg = ChatMessage.objects.create(author=user, room=chat_room, content=message)
         self.process_mentions(msg)
         return msg
+
     
-    def process_mentions(self, messsage):
-        mention_pattern = r'@(\w+)'
-        mentions = re.findall(mention_pattern, messsage.content)
+    def process_mentions(self, message):
+        mention_pattern = r'@(\w+)'  # or use stricter regex
+        mentions = re.findall(mention_pattern, message.content)
         for username in mentions:
             try:
-                user = get_user_model().objects.get(username= username)
-                ChatNotification.objects.create(user= user, message= messsage)
-                ChatNotification.objects.create(recipient= messsage.author, sender= messsage.author,
-                                                message= messsage, notification_type= 'mention')
-                
+                user = get_user_model().objects.get(username=username)
+                ChatNotification.objects.create(user=user, message=message)
+                ChatNotification.objects.create(
+                    recipient=message.author,
+                    sender=message.author,
+                    message=message,
+                    notification_type='mention'
+                )
             except get_user_model().DoesNotExist:
-                pass
+                print(f"[WARN] Mentioned user '{username}' not found.")
+                continue
+            except Exception as e:
+                print(f"[ERROR] While processing mention: {e}")
+                continue

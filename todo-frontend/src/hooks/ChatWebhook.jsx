@@ -24,7 +24,7 @@ export const useWebSocket = (url) => {
             return;
         }
 
-        const wsUrl = `ws://116.202.210.102:6969${url}?token=${token}`;
+        const wsUrl = `ws://116.202.210.102:6970${url}?token=${token}`;
         console.log('Connecting to:', wsUrl);
 
         // Close existing connection if any

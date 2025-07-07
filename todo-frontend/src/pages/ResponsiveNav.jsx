@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Search, MessageSquare, Users, Calendar, BarChart3, Settings, LogOut, Menu, X } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "../components/ui/avatar"
 import { Button } from "../components/ui/button"
@@ -8,6 +8,7 @@ import { Input } from "../components/ui/input"
 import { Separator } from "../components/ui/separator"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../components/ui/dropdown-menu"
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetClose } from "../components/ui/sheet"
+import { getProfile } from "../api/AxiosAuth"
 
 export default function ResponsiveNavbar({
   user,
@@ -21,6 +22,23 @@ export default function ResponsiveNavbar({
   selectproject,
 }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const [orgRole, setOrgRole] = useState(null);
+  
+
+  useEffect(() => {
+    const fetchOrgRole = async () => {
+      try {
+        const profileRes = await getProfile();
+        console.log("Profile response:", profileRes);
+        const role = profileRes.data?.role; // Adjust this line as needed
+        setOrgRole(role);
+      } catch (error) {
+        setOrgRole(null);
+        console.error("Error fetching org role:", error);
+      }
+    };
+    if (user) fetchOrgRole();
+  }, [user]);
 
   const navigationItems = [
     {
@@ -34,6 +52,7 @@ export default function ResponsiveNavbar({
       icon: Users,
       onClick: () => setShowTeamManagement(true),
       hoverColor: "hover:text-indigo-600 hover:bg-indigo-50",
+      hideFormember: true,
     },
     {
       label: "Calendar",
@@ -53,6 +72,9 @@ export default function ResponsiveNavbar({
     onClick()
     setIsMobileMenuOpen(false)
   }
+  const filteredNavigationItems = navigationItems.filter(
+  (item) => !(orgRole === "member" && item.hideFormember)
+);
 
   return (
     <header className="bg-white/80 backdrop-blur-xl border-b border-slate-200/60 shadow-sm sticky top-0 z-50">
@@ -96,18 +118,18 @@ export default function ResponsiveNavbar({
             <Separator orientation="vertical" className="h-6" />
 
             {/* Navigation Buttons */}
-            {navigationItems.map((item) => (
-              <Button
-                key={item.label}
-                variant="ghost"
-                size="sm"
-                onClick={item.onClick}
-                className={`text-slate-600 ${item.hoverColor}`}
-              >
-                <item.icon className="w-4 h-4 mr-2" />
-                {item.label}
-              </Button>
-            ))}
+            {filteredNavigationItems.map((item) => (
+  <Button
+    key={item.label}
+    variant="ghost"
+    size="sm"
+    onClick={item.onClick}
+    className={`text-slate-600 ${item.hoverColor}`}
+  >
+    <item.icon className="w-4 h-4 mr-2" />
+    {item.label}
+  </Button>
+))}
 
             <Separator orientation="vertical" className="h-6" />
 

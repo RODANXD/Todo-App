@@ -1,6 +1,9 @@
 from rest_framework import serializers
-from .models import Task, SubTask,TimeLog, Tag, TaskAttachment,ActivityLog,Comment
+from .models import Task, SubTask,TimeLog, Tag, TaskAttachment,ActivityLog,Comment, TaskRequest
 from users.serializers import UserSerializer
+
+
+
 
 class SubTaskSerializer(serializers.ModelSerializer):
     class Meta:
@@ -8,8 +11,15 @@ class SubTaskSerializer(serializers.ModelSerializer):
         fields = ('id', 'title', 'is_completed','order', 'created_at')
         # read_only_fields = ('id', 'created_at')
         
-    
-    
+
+class TaskRequestSerializer(serializers.ModelSerializer):
+    requested_by = UserSerializer(read_only=True)
+
+    class Meta:
+        model = TaskRequest
+        fields = '__all__'
+        read_only_fields = ['requested_by', 'status', 'created_at']
+            
 class TimeLogSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)
     duration = serializers.SerializerMethodField()

@@ -7,6 +7,7 @@ import { Badge } from "./ui/badge";
 import { ScrollArea } from "./ui/scroll-area";
 import { Separator } from "./ui/separator";
 import { Send, X, Users, Smile, Paperclip, MoreVertical, FileText, Download  } from "lucide-react";
+import { getalluser } from "../api/AxiosAuth";
 import { useWebSocket } from "../hooks/ChatWebhook";
 import data from "@emoji-mart/data";
 import Picker from "@emoji-mart/react";
@@ -41,7 +42,7 @@ const ChatInterface = ({ projectId, currentUser, onClose }) => {
     const fetchChatRoom = async () => {
       try {
         setIsLoading(true);
-        const response = await fetch(`http://116.202.210.102:6969/api/project/${projectId}/chat-room/`, {
+        const response = await fetch(`http://116.202.210.102:6970/api/project/${projectId}/chat-room/`, {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
             'Content-Type': 'application/json',
@@ -84,7 +85,7 @@ const ChatInterface = ({ projectId, currentUser, onClose }) => {
   const fetchMessages = async () => {
     if (!projectId) return;
     try {
-      const response = await fetch(`http://116.202.210.102:6969/api/project/${projectId}/chat/messages/`, {
+      const response = await fetch(`http://116.202.210.102:6970/api/project/${projectId}/chat/messages/`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('access_token')}`
         }
@@ -108,23 +109,21 @@ const ChatInterface = ({ projectId, currentUser, onClose }) => {
 
 
   // Fetch project users for mentions
-  useEffect(() => {
-    const fetchProjectUsers = async () => {
-      try {
-        const response = await fetch(`http://116.202.210.102:6969/api/project/${projectId}/members/`, {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('access_token')}`
-          }
-        });
-        const data = await response.json();
-        setProjectUsers(data);
-      } catch (error) {
-        console.error('Error fetching project users:', error);
-      }
-    };
+ useEffect(() => {
+  const fetchAllUsers = async () => {
+    try {
+      const response = await getalluser(); 
+      const users = Array.isArray(response.data) ? response.data : [response.data]; // handle single user fallback
+      // console.log("-----------",users)
+      setProjectUsers(users);
+    } catch (error) {
+      console.error("Error fetching all users for mentions:", error);
+    }
+  };
 
-    fetchProjectUsers();
-  }, [projectId]);
+  fetchAllUsers();
+}, []);
+
 
   // Message handler
   useEffect(() => {
@@ -191,9 +190,10 @@ const handleMessage = (e) => {
       message: messageToSend,
       username: currentUser,
       file: filedata,
+      created_at: new Date().toISOString()
     };
 
-    socket.send(JSON.stringify(messageData));
+socket.send(JSON.stringify(messageData));
     setSelectedFile(null);
     setNewMessage('');
     setError(null);
@@ -217,7 +217,7 @@ const handleMessage = (e) => {
     }
   };
 
-  console.log("messages :============ ", messages)
+  // console.log("messages :============ ", messages)
 
   const handleFileUpload = async (messageId) => {
   if (!selectedFile) return;
@@ -244,6 +244,7 @@ const handleFileChange = (e) => {
   };
 
 
+
   const fileInputRef = useRef();
   // Get user initials for avatar
   const getUserInitials = (username) => {
@@ -251,13 +252,18 @@ const handleFileChange = (e) => {
   };
 
   // Format timestamp
-  const formatTime = (timestamp) => {
-    console.log("timestamp",timestamp)
-    return new Date(timestamp).toLocaleTimeString([], { 
-      hour: '2-digit', 
-      minute: '2-digit' 
+const formatTime = (timestamp) => {
+  try {
+    const date = timestamp ? new Date(timestamp) : new Date();
+    return date.toLocaleTimeString([], {
+      hour: '2-digit',
+      minute: '2-digit'
     });
-  };
+  } catch {
+    return '--:--';
+  }
+};
+
   
 
   if (isLoading) {
@@ -283,9 +289,9 @@ const handleFileChange = (e) => {
           </Badge>
         </div>
         <div className="flex items-center space-x-2">
-          <Button variant="ghost" size="sm">
+          {/* <Button variant="ghost" size="sm">
             <MoreVertical className="h-4 w-4" />
-          </Button>
+          </Button> */}
           <Button variant="ghost" size="sm" onClick={onClose}>
             <X className="h-4 w-4" />
           </Button>
@@ -423,32 +429,33 @@ const handleFileChange = (e) => {
       </ScrollArea>
 
       {/* Mentions Dropdown */}
-      {showMentions && (
-        <div className="absolute bottom-20 left-4 right-4 bg-card border rounded-lg shadow-lg max-h-40 overflow-y-auto z-10">
-          {projectUsers
-  .filter(user => user.username && user.username.toLowerCase().includes(mentionSearch.toLowerCase()))
-  .map(user => (
-    <div
-      key={user.id}
-      className="flex items-center space-x-2 p-3 hover:bg-accent cursor-pointer"
-      onClick={() => handleMentionSelect(user.username)}
-    >
-      <Avatar className="h-6 w-6">
-        <AvatarFallback className="text-xs">
-          {getUserInitials(user.username)}
-        </AvatarFallback>
-      </Avatar>
-      <span className="text-sm">@{user.username}</span>
-    </div>
-  ))
-}
-        </div>
-      )}
+      
 
       <Separator />
 
       {/* Message Input */}
       <div className="p-4 bg-card">
+        {showMentions && (
+        <div className="flex flex-col max-h-20 mb-3 overflow-scroll scrollbar-hide">
+          {projectUsers
+  .filter(username => username.toLowerCase().includes(mentionSearch.toLowerCase()))
+  .map((username, index) => (
+    <div
+      key={index}
+      className="flex items-center space-x-2 p-3 hover:bg-accent cursor-pointer"
+      onClick={() => handleMentionSelect(username)}
+    >
+      <Avatar className="h-6 w-6">
+        <AvatarFallback className="text-xs">
+          {username.slice(0, 2).toUpperCase()}
+        </AvatarFallback>
+      </Avatar>
+      <span className="text-sm">@{username}</span>
+    </div>
+))}
+
+        </div>
+      )}
         <div className="flex items-center space-x-2">
           <input
   type="file"

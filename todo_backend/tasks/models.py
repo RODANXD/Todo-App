@@ -95,7 +95,27 @@ class Task(models.Model):
         self.log_activity(self.created_by, 'updated',f'Removed dependency: {task.title}')
     
     
+
+class TaskRequest(models.Model):
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('approved', 'Approved'),
+        ('rejected', 'Rejected'),
+    ]
     
+    project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='task_requests')
+    task_list = models.ForeignKey(TaskList, on_delete=models.CASCADE)
+    title = models.CharField(max_length=255)
+    description = models.TextField(blank=True)
+    requested_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.title} - {self.status}"
+
+
+
 class SubTask(models.Model):
         task = models.ForeignKey(Task, on_delete=models.CASCADE, related_name='subtasks')
         title = models.CharField(max_length=255)

@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react"
 import { useauth } from "../store/AuthContext"
 import { useNavigate } from "react-router-dom"
-import { getOrganization, getProjects, getTasksByProject, getTaskStats, updateProject } from "../api/AxiosAuth"
+import { getOrganization, getProjects, getProfile, getTasksByProject, getProjectMembers, getTaskStats, updateProject } from "../api/AxiosAuth"
 import KanbanBoard from "../components/kanban-board"
 import { KanbanProvider } from "../components/kanban-provider"
 import TeamManagement from "../components/TeamManagement"
@@ -12,14 +12,14 @@ import { Input } from "../components/ui/input"
 import { Button } from "../components/ui/button"
 import { Textarea } from "../components/ui/textarea"
 import { createProject, deleteProject } from "../api/AxiosAuth"
-
-import {MoreHorizontal,Plus,Users,Calendar,BarChart3,MessageSquare,LogOut,Filter,X,Search,Bell,Settings,Folder,Clock,Target, Menu} from "lucide-react"
+import TaskRequestsPanel from "../components/TaskReq"
+import { MoreHorizontal, Plus, Users, Calendar, BarChart3, MessageSquare, LogOut, Filter, X, Search, Bell, Settings, Folder, Clock, Target, Menu } from "lucide-react"
 import { toast } from "sonner";
 import { Switch } from "../components/ui/switch"
 import ChatInterface from "../components/ChatInterface"
 import ChatErrorBoundary from "../components/Chat-boundary"
-import {Dialog,DialogClose,DialogContent,DialogDescription,DialogFooter,DialogHeader,DialogTitle,DialogTrigger,} from "../components/ui/dialog"
-import {  DropdownMenu,  DropdownMenuContent,  DropdownMenuItem,  DropdownMenuTrigger,} from "../components/ui/dropdown-menu"
+import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, } from "../components/ui/dialog"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, } from "../components/ui/dropdown-menu"
 import { createTaskList, duplicateproject } from "../api/AxiosAuth"
 import { Label } from "../components/ui/label"
 import TaskModal from "../components/task-modal"
@@ -67,6 +67,10 @@ const Dashboard = () => {
   const [searchQuery, setSearchQuery] = useState("")
   const [showSettings, setShowSettings] = useState(false)
   const [orgRole, setOrgRole] = useState(null);
+  const [members, setMembers] = useState([]);
+  const [username, setUsername] = useState([])
+  const [projectRole, setProjectRole] = useState(null);
+
 
   const navigate = useNavigate()
   // const { theme, toggleTheme } = useTheme();
@@ -106,10 +110,10 @@ const Dashboard = () => {
         setTasks([])
         return
       }
-    const currentProjectTasks = tasks.filter(task => task.project === selectproject.id)
-    if (currentProjectTasks.length > 0 && tasks.length > 0) {
-      return // Already have tasks for this project
-    }
+      const currentProjectTasks = tasks.filter(task => task.project === selectproject.id)
+      if (currentProjectTasks.length > 0 && tasks.length > 0) {
+        return // Already have tasks for this project
+      }
 
       try {
         setLoading(true)
@@ -131,151 +135,181 @@ const Dashboard = () => {
   }, [selectproject?.id])
 
 
-const [tasksByProject, setTasksByProject] = useState({}) // Cache tasks by project ID
+  const [tasksByProject, setTasksByProject] = useState({}) // Cache tasks by project ID
 
-const fetchTasksForProject = async (projectId) => {
-  // Check cache first
-  // if (tasksByProject[projectId]) {
-  //   setTasks(tasksByProject[projectId])
-  //   return
-  // }
+  const fetchTasksForProject = async (projectId) => {
+    // Check cache first
+    // if (tasksByProject[projectId]) {
+    //   setTasks(tasksByProject[projectId])
+    //   return
+    // }
 
-  try {
-    setLoading(true)
-    const response = await getTasksByProject(projectId)
-    const taskListsData = response.data.results || response.data
-    const tasksArray = Array.isArray(taskListsData) ? taskListsData : [taskListsData]
-    const filteredTask = tasksArray.filter((task) => task.project === projectId)
-    
-    // Cache the tasks
-    setTasksByProject(prev => ({
-      ...prev,
-      [projectId]: filteredTask
-    }))
-    setTasks(filteredTask)
-    setError(null)
-  } catch (error) {
-    console.error("Error fetching task lists:", error)
-    setError("Failed to load task lists. Please try again.")
-  } finally {
-    setLoading(false)
-  }
-}
-
-  useEffect(() => {
-  const fetchStats = async () => {
     try {
-      const response = await getTaskStats()
-      setStats(response.data)
+      setLoading(true)
+      const response = await getTasksByProject(projectId)
+      const taskListsData = response.data.results || response.data
+      const tasksArray = Array.isArray(taskListsData) ? taskListsData : [taskListsData]
+      const filteredTask = tasksArray.filter((task) => task.project === projectId)
+
+      // Cache the tasks
+      setTasksByProject(prev => ({
+        ...prev,
+        [projectId]: filteredTask
+      }))
+      setTasks(filteredTask)
+      setError(null)
     } catch (error) {
-      console.error("Error fetching stats:", error)
+      console.error("Error fetching task lists:", error)
+      setError("Failed to load task lists. Please try again.")
+    } finally {
+      setLoading(false)
     }
   }
-
-  fetchStats()
-}, [])
-
-
-useEffect(()=>{
-  const fetchOrgrole = async()=>{
-    const orgRes =await getOrganization()
-    const org =  orgRes.data.result?.[0]
-    if(org){
-      const member = org.members.find(m=>m.user === user.id)
-      setOrgRole(member?.role)
-    }
-  }
-  fetchOrgrole()
-},[user]
-)
 
   useEffect(() => {
-  if (projects.length > 0 && !selectproject) {
-    setSelectProject(projects[0]);
-  }
-}, [projects, selectproject]);
+    const fetchStats = async () => {
+      try {
+        const response = await getTaskStats()
+        setStats(response.data)
+      } catch (error) {
+        console.error("Error fetching stats:", error)
+      }
+    }
 
-const onSelect = async (proj) => {
-  try {
-    // Only proceed if it's a different project
-    if (selectproject?.id === proj.id) {
+    fetchStats()
+  }, [])
+
+
+  useEffect(() => {
+    const fetchOrgRole = async () => {
+      try {
+        const profileRes = await getProfile();
+        // console.log("Profile response:", profileRes);
+        const role = profileRes.data?.role;
+        const uname = profileRes.data?.username
+        // console.log("username", username)
+        setUsername(uname)
+        setOrgRole(role);
+      } catch (error) {
+        setOrgRole(null);
+        console.error("Error fetching org role:", error);
+      }
+    };
+    if (user) fetchOrgRole();
+  }, [user]);
+
+  useEffect(() => {
+    if (projects.length > 0 && !selectproject) {
+      setSelectProject(projects[0]);
+    }
+  }, [projects, selectproject]);
+
+  const onSelect = async (proj) => {
+    try {
+      // Only proceed if it's a different project
+      if (selectproject?.id === proj.id) {
+        return
+      }
+
+      setSelectProject(proj)
+      setTasks([])
+      // Fetch tasks for the new project (will use cache if available)
+      await fetchTasksForProject(proj.id)
+
+      // Handle task list creation if needed
+      if (!proj.task_lists?.length) {
+        const taskListId = await ensureTaskList(proj.id)
+        const updatedProj = {
+          ...proj,
+          task_lists: [
+            {
+              id: taskListId,
+              name: "Default Task List",
+              project: proj.id,
+            },
+          ],
+        }
+        setSelectProject(updatedProj)
+      }
+    } catch (error) {
+      console.error("Error in project selection:", error)
+      setError(`Error selecting project: ${error.message}`)
+    }
+  }
+  const [isSelectingProject, setIsSelectingProject] = useState(false)
+
+  const onSelectWithLoadingState = async (proj) => {
+    if (isSelectingProject || selectproject?.id === proj.id) {
       return
     }
 
-    setSelectProject(proj)
-    setTasks([])
-    // Fetch tasks for the new project (will use cache if available)
-    await fetchTasksForProject(proj.id)
-    
-    // Handle task list creation if needed
-    if (!proj.task_lists?.length) {
-      const taskListId = await ensureTaskList(proj.id)
-      const updatedProj = {
-        ...proj,
-        task_lists: [
-          {
-            id: taskListId,
-            name: "Default Task List",
-            project: proj.id,
-          },
-        ],
-      }
-      setSelectProject(updatedProj)
+    setIsSelectingProject(true)
+    try {
+      await onSelectOptimized(proj)
+    } finally {
+      setIsSelectingProject(false)
     }
-  } catch (error) {
-    console.error("Error in project selection:", error)
-    setError(`Error selecting project: ${error.message}`)
-  }
-}
-const [isSelectingProject, setIsSelectingProject] = useState(false)
-
-const onSelectWithLoadingState = async (proj) => {
-  if (isSelectingProject || selectproject?.id === proj.id) {
-    return
   }
 
-  setIsSelectingProject(true)
-  try {
-    await onSelectOptimized(proj)
-  } finally {
-    setIsSelectingProject(false)
-  }
-}
-  
 
   const ensureTaskList = async (projectId) => {
-  try {
-    const project = projects.find(p => p.id === projectId);
-    if (!project) throw new Error("Project not found");
+    try {
+      const project = projects.find(p => p.id === projectId);
+      if (!project) throw new Error("Project not found");
 
 
-    if (project.task_lists && project.task_lists.length > 0 && project.task_lists[0].id) {
-      return project.task_lists[0].id;
+      if (project.task_lists && project.task_lists.length > 0 && project.task_lists[0].id) {
+        return project.task_lists[0].id;
+      }
+
+      const taskListData = {
+        name: "Default Task List",
+        project: projectId,
+        description: "Default task list for project",
+      };
+      const response = await createTaskList(taskListData);
+      if (!response.data) throw new Error("Failed to create task list - no response data");
+
+      // Update the project in your projects state
+      setProjects(prev =>
+        prev.map(p =>
+          p.id === projectId
+            ? { ...p, task_lists: [response.data] }
+            : p
+        )
+      );
+
+      return response.data.id;
+    } catch (error) {
+      console.error("Error ensuring task list:", error);
+      throw new Error(`Failed to create task list: ${error.message}`);
     }
+  };
 
-    const taskListData = {
-      name: "Default Task List",
-      project: projectId,
-      description: "Default task list for project",
-    };
-    const response = await createTaskList(taskListData);
-    if (!response.data) throw new Error("Failed to create task list - no response data");
 
-    // Update the project in your projects state
-    setProjects(prev =>
-      prev.map(p =>
-        p.id === projectId
-          ? { ...p, task_lists: [response.data] }
-          : p
-      )
-    );
+  const fetchMembers = async () => {
+    if (!selectproject || !selectproject.id) return;
+    try {
+      const response = await getProjectMembers(selectproject.id);
+      console.log("fetchmember -------------", response)
+      const membersData = response.data;
+      setMembers(membersData);
+      console.log('Fetched members:', response.data);
+      const currentMember = membersData.find((m) => m.user.username === username);
+      console.log("current member " ,currentMember)
+      if (currentMember) {
+        setProjectRole(currentMember.role);
+      }
+    } catch (error) {
+      console.error('Failed to fetch members:', error);
+    }
+  };
 
-    return response.data.id;
-  } catch (error) {
-    console.error("Error ensuring task list:", error);
-    throw new Error(`Failed to create task list: ${error.message}`);
-  }
-};
+  useEffect(() => {
+    if (selectproject && selectproject.id) {
+      fetchMembers();
+    }
+  }, [selectproject?.id]);
 
   const handleEditProject = (project) => {
     event.stopPropagation()
@@ -312,7 +346,7 @@ const onSelectWithLoadingState = async (proj) => {
     try {
       const response = await duplicateproject(projectId)
       const newProject = response.data
-      setProjects((prev)=>[...prev, newProject])
+      setProjects((prev) => [...prev, newProject])
       setSelectProject(newProject)
       await fetchTasksForProject(newProject)
       toast.success("Project duplicated successfully")
@@ -381,19 +415,19 @@ const onSelectWithLoadingState = async (proj) => {
     }
   }
   const sortedTasks = useMemo(() => {
-  if (!sortBy || !tasks.length) return tasks;
-  const sorted = [...tasks];
-  if (sortBy === "dueDate") {
-    sorted.sort((a, b) => new Date(a.due_date) - new Date(b.due_date));
-  } else if (sortBy === "priority") {
-    const priorityOrder = { high: 1, medium: 2, low: 3 };
-    sorted.sort((a, b) => (priorityOrder[a.priority] || 4) - (priorityOrder[b.priority] || 4));
-  } else if (sortBy === "status") {
-    const statusOrder = { todo: 1, in_progress: 2, done: 3 };
-    sorted.sort((a, b) => (statusOrder[a.status] || 4) - (statusOrder[b.status] || 4));
-  }
-  return sorted;
-}, [tasks, sortBy]);
+    if (!sortBy || !tasks.length) return tasks;
+    const sorted = [...tasks];
+    if (sortBy === "dueDate") {
+      sorted.sort((a, b) => new Date(a.due_date) - new Date(b.due_date));
+    } else if (sortBy === "priority") {
+      const priorityOrder = { high: 1, medium: 2, low: 3 };
+      sorted.sort((a, b) => (priorityOrder[a.priority] || 4) - (priorityOrder[b.priority] || 4));
+    } else if (sortBy === "status") {
+      const statusOrder = { todo: 1, in_progress: 2, done: 3 };
+      sorted.sort((a, b) => (statusOrder[a.status] || 4) - (statusOrder[b.status] || 4));
+    }
+    return sorted;
+  }, [tasks, sortBy]);
 
   const onClose = () => {
     setIsOpen(false)
@@ -403,26 +437,26 @@ const onSelectWithLoadingState = async (proj) => {
     setorganization("")
   }
 
-// const filteredProjects = useMemo(() => {
-//   return projects.filter(
-//     (project) =>
-//       (project.name && project.name.toLowerCase().includes(searchQuery.toLowerCase())) ||
-//       (project.description && project.description.toLowerCase().includes(searchQuery.toLowerCase()))
-//   )
-// }, [projects, searchQuery])
+  // const filteredProjects = useMemo(() => {
+  //   return projects.filter(
+  //     (project) =>
+  //       (project.name && project.name.toLowerCase().includes(searchQuery.toLowerCase())) ||
+  //       (project.description && project.description.toLowerCase().includes(searchQuery.toLowerCase()))
+  //   )
+  // }, [projects, searchQuery])
 
-const filteredProjects = useMemo(() => {
-  return projects.filter(
-    (project) => {
-      // Assuming project.roles is an array of {user, role}
-      const myRole = project.roles?.find(r => r.user === user.id)?.role;
-      return myRole !== "viewer"; // Only show if not just a viewer
-    }
-  );
-}, [projects, user]);
+  const filteredProjects = useMemo(() => {
+    return projects.filter(
+      (project) => {
+        // Assuming project.roles is an array of {user, role}
+        const myRole = project.roles?.find(r => r.user === user.id)?.role;
+        return myRole !== "viewer"; // Only show if not just a viewer
+      }
+    );
+  }, [projects, user]);
 
 
-console.log("org role---------------------------",orgRole)
+  console.log("org role---------------------------", orgRole)
   if (loading && !projects.length) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 flex items-center justify-center">
@@ -443,9 +477,9 @@ console.log("org role---------------------------",orgRole)
   return (
     <div className="min-h-screen">
       {/* Modern Header */}
-      <ResponsiveNavbar setSearchQuery={setSearchQuery} user={user} 
-      setIsChatOpen={setIsChatOpen} navigate={navigate} setShowSettings={setShowSettings} 
-      logout={logout} selectproject={selectproject} setShowTeamManagement={setShowTeamManagement} />
+      <ResponsiveNavbar setSearchQuery={setSearchQuery} user={user}
+        setIsChatOpen={setIsChatOpen} navigate={navigate} setShowSettings={setShowSettings}
+        logout={logout} selectproject={selectproject} setShowTeamManagement={setShowTeamManagement} />
 
       {/* Enhanced Stats Section */}
       {stats && (
@@ -490,15 +524,17 @@ console.log("org role---------------------------",orgRole)
                     </div>
                   </div>
                   <Dialog open={isOpen} onOpenChange={setIsOpen}>
-                    <DialogTrigger asChild>
-                      <Button
-                        size="sm"
-                        className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-sm"
-                      >
-                        <Plus className="w-4 h-4 mr-1" />
-                        New
-                      </Button>
-                    </DialogTrigger>
+                    {orgRole === "admin" && (
+                      <DialogTrigger asChild>
+                        <Button
+                          size="sm"
+                          className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-sm"
+                        >
+                          <Plus className="w-4 h-4 mr-1" />
+                          New
+                        </Button>
+                      </DialogTrigger>
+                    )}
                     <DialogContent className="sm:max-w-[500px]">
                       <DialogHeader>
                         <DialogTitle className="text-xl text-slate-800">
@@ -572,11 +608,10 @@ console.log("org role---------------------------",orgRole)
                     {filteredProjects.map((proj, index) => (
                       <Card
                         key={proj.id}
-                        className={`group cursor-pointer transition-all duration-200 hover:shadow-md ${
-                          selectproject?.id === proj.id
+                        className={`group cursor-pointer transition-all duration-200 hover:shadow-md ${selectproject?.id === proj.id
                             ? "ring-2 ring-blue-200 bg-blue-50/50 border-blue-200"
                             : "hover:bg-slate-50/50 border-slate-200"
-                        }`}
+                          }`}
                         onClick={() => onSelect(proj)}
                       >
                         <CardContent className="p-4">
@@ -584,15 +619,16 @@ console.log("org role---------------------------",orgRole)
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center space-x-3 mb-2">
                                 <div
-                                  className={`w-3 h-3 rounded-full ${
-                                    selectproject?.id === proj.id ? "bg-blue-500" : "bg-slate-300"
-                                  }`}
+                                  className={`w-3 h-3 rounded-full ${selectproject?.id === proj.id ? "bg-blue-500" : "bg-slate-300"
+                                    }`}
                                 ></div>
                                 <h3 className="font-semibold text-slate-800 truncate">{proj.name}</h3>
                               </div>
                               {proj.description && (
-                                <p className="text-slate-600 text-sm mb-3 line-clamp-2 ml-6">{proj.description}</p>
+                                <p className="text-slate-600 text-sm mb-3 line-clamp-2 ml-6">#{proj.id} <br />{proj.description}</p>
                               )}
+
+
                               <div className="flex items-center justify-between ml-6">
                                 <Badge variant="secondary" className="bg-slate-100 text-slate-600 text-xs">
                                   {proj.task_lists?.length || 0} lists
@@ -606,16 +642,22 @@ console.log("org role---------------------------",orgRole)
                               </div>
                             </div>
                             <DropdownMenu>
+                              {projectRole !== 'member' && (
                               <DropdownMenuTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="opacity-1 group-hover:opacity-100 transition-opacity h-8 w-8 p-0 text-slate-400 hover:text-slate-600"
-                                  onClick={(e) => e.stopPropagation()}
-                                >
-                                  <MoreHorizontal className="h-4 w-4" />
-                                </Button>
+                                
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="opacity-1 group-hover:opacity-100 transition-opacity h-8 w-8 p-0 text-slate-400 hover:text-slate-600"
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    <MoreHorizontal className="h-4 w-4" />
+                                  </Button>
+                                
                               </DropdownMenuTrigger>
+                              )}
+
+
                               <DropdownMenuContent align="end">
                                 <DropdownMenuItem onClick={() => handleEditProject(proj)}>
                                   Edit project
@@ -679,6 +721,7 @@ console.log("org role---------------------------",orgRole)
                         <CardDescription className="mt-1">{selectproject.description}</CardDescription>
                       )}
                     </div>
+                    {orgRole === "admin" && <TaskRequestsPanel projectId={selectproject?.id} />}
                   </div>
                   {selectproject && (
                     <div className="flex items-center space-x-3">
@@ -708,27 +751,27 @@ console.log("org role---------------------------",orgRole)
                 {/* Chat Interface */}
                 {isChatOpen && (
                   <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-            <div className="rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden">
-                  <Card className="mb-6 border-slate-200">
-                    <CardContent className="p-4">
-                      <ChatErrorBoundary>
-                        {user.username ? (
-                          <ChatInterface
-                            projectId={selectproject?.id}
-                            currentUser={user.username}
-                            onClose={() => setIsChatOpen(false)}
-                          />
-                        ) : (
-                          <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg text-amber-800">
-                            Please log in to access chat
-                          </div>
-                        )}
-                      </ChatErrorBoundary>
-                    </CardContent>
-                  </Card>
+                    <div className="rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden">
+                      <Card className="mb-6 border-slate-200">
+                        <CardContent className="p-4">
+                          <ChatErrorBoundary>
+                            {user.username ? (
+                              <ChatInterface
+                                projectId={selectproject?.id}
+                                currentUser={user.username}
+                                onClose={() => setIsChatOpen(false)}
+                              />
+                            ) : (
+                              <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg text-amber-800">
+                                Please log in to access chat
+                              </div>
+                            )}
+                          </ChatErrorBoundary>
+                        </CardContent>
+                      </Card>
+                    </div>
                   </div>
-                  </div>
-                  
+
                 )}
 
                 {/* Enhanced Filters */}
@@ -783,7 +826,7 @@ console.log("org role---------------------------",orgRole)
                           ))}
                         </select> */}
 
-                        <select
+                        {/* <select
                           value={sortBy}
                           onChange={(e) => setSortBy(e.target.value)}
                           className="px-3 py-2 bg-[#f7797d] border border-slate-300 rounded-lg text-slate-800 text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-300"
@@ -792,7 +835,7 @@ console.log("org role---------------------------",orgRole)
                           <option value="dueDate">Due Date</option>
                           <option value="priority">Priority</option>
                           <option value="status">Status</option>
-                        </select>
+                        </select> */}
 
                         <Input
                           type="date"
@@ -800,7 +843,7 @@ console.log("org role---------------------------",orgRole)
                           onChange={(e) => setFilters((prev) => ({ ...prev, dueDate: e.target.value }))}
                           className="bg-[#f7797d] text-slate-800 w-[145px] focus:border-blue-300 focus:ring-blue-200"
                           placeholder="Due date"
-                          
+
                         />
 
                         <Button
@@ -827,7 +870,7 @@ console.log("org role---------------------------",orgRole)
                 {selectproject && tasks.length > 0 ? (
                   <div className="bg-slate-50/30 rounded-xl p-4 border border-slate-200/50">
                     <KanbanProvider tasks={sortedTasks} filters={filters} sortBy={sortBy}>
-                      <KanbanBoard projectId={selectproject.id} taskListId={selectproject.task_lists?.[0]?.id} />
+                      <KanbanBoard orgRole={orgRole} projectId={selectproject.id} taskListId={selectproject.task_lists?.[0]?.id} />
                     </KanbanProvider>
                   </div>
                 ) : selectproject ? (
@@ -886,36 +929,36 @@ console.log("org role---------------------------",orgRole)
         //   }}
         // />
         <TaskModal
-  isOpen={isTaskModalOpen}
-  onClose={closeTaskModal}
-  task={editingTask}
-  projectId={selectproject?.id}
-  taskListId={selectproject?.task_lists?.[0]?.id}
-  onSuccess={() => {
-  closeTaskModal()
-  const fetchTasks = async () => {
-    try {
-      const response = await getTasksByProject(selectproject.id)
-      const updatedTasks = response.data.results || response.data
-      setTasks(updatedTasks)
-      setTasksByProject((prev) => ({
-        ...prev,
-        [selectproject.id]: updatedTasks
-      }))
-    } catch (error) {
-      console.error("Error fetching tasks:", error)
-    }
-  }
-  fetchTasks()
-}}
+          isOpen={isTaskModalOpen}
+          onClose={closeTaskModal}
+          task={editingTask}
+          projectId={selectproject?.id}
+          taskListId={selectproject?.task_lists?.[0]?.id}
+          onSuccess={() => {
+            closeTaskModal()
+            const fetchTasks = async () => {
+              try {
+                const response = await getTasksByProject(selectproject.id)
+                const updatedTasks = response.data.results || response.data
+                setTasks(updatedTasks)
+                setTasksByProject((prev) => ({
+                  ...prev,
+                  [selectproject.id]: updatedTasks
+                }))
+              } catch (error) {
+                console.error("Error fetching tasks:", error)
+              }
+            }
+            fetchTasks()
+          }}
 
-/>
+        />
       )}
 
       {/* Team Management Modal */}
       {showTeamManagement && <TeamManagement project={selectproject} onClose={() => setShowTeamManagement(false)} />}
-        {showSettings && (
-        <SettingsProfile project={selectproject}  onClose={() => setShowSettings(false)} />
+      {showSettings && (
+        <SettingsProfile project={selectproject} onClose={() => setShowSettings(false)} />
       )}
     </div>
   )

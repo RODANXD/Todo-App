@@ -34,7 +34,6 @@ export default function Login() {
             }
         } catch (error) {
             if (error.response) {
-
                 toast.error("Invalid credentials");
                 setError(error.response.data.detail || 'Invalid credentials');
             } else {
@@ -45,92 +44,86 @@ export default function Login() {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center p-4">
-            <div className="flex justify-center items-center w-full max-w-6xl bg-white rounded-2xl shadow-xl p-8">
-                <div className="w-full max-w-md p-6 bg-white rounded-lg">
+        <div className="min-h-screen flex items-center justify-center p-4 sm:p-6 lg:p-8">
+            <div className="flex flex-col lg:flex-row justify-center items-center w-full max-w-7xl bg-white rounded-2xl shadow-xl p-4 sm:p-6 lg:p-8">
+                <div className="w-full lg:w-1/2 max-w-md p-4 sm:p-6">
                     {showForgotPassword ? (
                         <ForgotPasswordForm setShowForgotPassword={setShowForgotPassword} />
-                    ):(
+                    ) : (
                         <>
-                    <div className="text-center mb-6">
-                        <h2 className="text-4xl font-bold text-gray-900">Hello, Welcome Back</h2>
-                        <p className="text-gray-500 mt-2">Hey, welcome back to your special place</p>
-                    </div>
-                    {/* {error && (
-                        <div className="mb-4 p-3 text-sm text-red-600 bg-red-100 rounded-lg text-center">
-                            {error}
-                        </div>
-                    )} */}
-                    <form onSubmit={handleLogin} className="space-y-4">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                            <input
-                                type="email"
-                                name="email"
-                                value={form.email}
-                                onChange={handleChange}
-                                className="w-full bg-gray-100 p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-                                placeholder="Enter your email"
-                                required
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
-                            <div className="flex items-center">
-                            <input
-                                type={showConfirmPassword?"text":"password"}
-                                name="password"
-                                value={form.password}
-                                onChange={handleChange}
-                                className="w-full bg-gray-100 p-2 border border-gray-300 rounded-lg focus:outline-none"
-                                placeholder="Enter your password"
-                                required
-                            />
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              className=" relative right-8 h-6 w-1 p-0"
-                              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                            >
-                              {showConfirmPassword ? <EyeOff className=" w-6 h-6" /> : <Eye className="w-4 h-4" />}
-                            </Button>
-
+                            <div className="text-center mb-6">
+                                <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900">Hello, Welcome Back</h2>
+                                <p className="text-gray-500 mt-2 text-sm sm:text-base">Hey, welcome back to your special place</p>
                             </div>
-                        </div>
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center">
-                                <input
-                                    id="remember"
-                                    type="checkbox"
-                                    className="w-4 h-4 text-purple-600 border-gray-300 rounded"
-                                />
-                                <label htmlFor="remember" className="ml-2 text-sm text-gray-600">
-                                    Remember me
-                                </label>
-                            </div>
-                            <span
-                                onClick={() => setShowForgotPassword(true)}
-                                className="text-sm text-purple-600 hover:text-purple-500 cursor-pointer"
-                            >
-                                Forgot password?
-                            </span>
-                        </div>
-                        <button
-                            type="submit"
-                            className="w-full py-2 bg-purple-600 text-white font-semibold rounded-lg hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                        >
-                            Sign In
-                        </button>
-                    </form>
-                    <p className="mt-4 text-sm text-center text-gray-600">
-                        Don’t have an account? <a href="/register" className="text-purple-600 hover:text-purple-500">Sign Up</a>
-                    </p>
-                    </>
+                            <form onSubmit={handleLogin} className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                                    <input
+                                        type="email"
+                                        name="email"
+                                        value={form.email}
+                                        onChange={handleChange}
+                                        className="w-full bg-gray-100 p-2 sm:p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm sm:text-base"
+                                        placeholder="Enter your email"
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                                    <div className="relative flex items-center">
+                                        <input
+                                            type={showConfirmPassword ? "text" : "password"}
+                                            name="password"
+                                            value={form.password}
+                                            onChange={handleChange}
+                                            className="w-full bg-gray-100 p-2 sm:p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm sm:text-base"
+                                            placeholder="Enter your password"
+                                            required
+                                        />
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="sm"
+                                            className="absolute right-2 h-6 w-6 p-0"
+                                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                        >
+                                            {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                                        </Button>
+                                    </div>
+                                </div>
+                                <div className="flex flex-col sm:flex-row items-center justify-between gap-2">
+                                    <div className="flex items-center">
+                                        <input
+                                            id="remember"
+                                            type="checkbox"
+                                            className="w-4 h-4 text-purple-600 border-gray-300 rounded"
+                                        />
+                                        <label htmlFor="remember" className="ml-2 text-sm text-gray-600">
+                                            Remember me
+                                        </label>
+                                    </div>
+                                    <span
+                                        onClick={() => setShowForgotPassword(true)}
+                                        className="text-sm text-purple-600 hover:text-purple-500 cursor-pointer"
+                                    >
+                                        Forgot password?
+                                    </span>
+                                </div>
+                                <button
+                                    type="submit"
+                                    className="w-full py-2 sm:py-3 bg-purple-600 text-white font-semibold rounded-lg hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm sm:text-base"
+                                >
+                                    Sign In
+                                </button>
+                            </form>
+                            <p className="mt-4 text-sm text-center text-gray-600">
+                                Don’t have an account? <a href="/register" className="text-purple-600 hover:text-purple-500">Sign Up</a>
+                            </p>
+                        </>
                     )}
                 </div>
-                <div className="w-2/5 ml-8">
-                    <img src={loginbg} alt="Login Illustration" className="w-full rounded-lg" />
+                <div className="w-full lg:w-1/2 mt-6 lg:mt-0 lg:ml-8 hidden lg:block">
+                    <img src={loginbg} alt="Login Illustration" className="w-full h-auto rounded-lg object-cover" />
                 </div>
             </div>
         </div>
@@ -152,8 +145,8 @@ function ForgotPasswordForm({ setShowForgotPassword }) {
     };
 
     return (
-        <div className="w-full max-w-md p-6 bg-white rounded-lg">
-            <h2 className="text-3xl font-bold text-center text-gray-900 mb-6">Forgot Password</h2>
+        <div className="w-full max-w-md p-4 sm:p-6">
+            <h2 className="text-2xl sm:text-3xl font-bold text-center text-gray-900 mb-6">Forgot Password</h2>
             <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
@@ -162,18 +155,18 @@ function ForgotPasswordForm({ setShowForgotPassword }) {
                         name="email"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        className="w-full bg-gray-100 p-2 border border-gray-300 rounded-lg focus:outline-none"
+                        className="w-full bg-gray-100 p-2 sm:p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm sm:text-base"
                         placeholder="Enter your email"
                         required
                     />
                 </div>
                 <button
                     type="submit"
-                    className="w-full py-2 bg-purple-600 text-white font-semibold rounded-lg hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    className="w-full py-2 sm:py-3 bg-purple-600 text-white font-semibold rounded-lg hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm sm:text-base"
                 >
                     Send Reset Link
                 </button>
-                {message && <p className="mt-4 text-green-600 text-center">{message}</p>}
+                {message && <p className="mt-4 text-green-600 text-center text-sm">{message}</p>}
                 <p
                     onClick={() => setShowForgotPassword(false)}
                     className="mt-4 text-sm text-center text-purple-600 hover:text-purple-500 cursor-pointer"

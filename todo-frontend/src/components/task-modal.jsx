@@ -24,11 +24,11 @@ import { Calendar } from "../components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "../components/ui/popover"
 import { format } from "date-fns"
 import { createTask, updateTask, createTaskList, getTasksByProject } from "../api/AxiosAuth" // Import API functions
-import { createTaskWithList, getProjectMembers } from "../api/AxiosAuth";
+import { createTaskWithList, getProjectMembers, createTaskRequest } from "../api/AxiosAuth";
 
 // import { updateTask } from "../api/AxiosAuth"
 
-export default function TaskModal({ isOpen, onClose, task, projectId, taskListId, onSuccess }) {
+export default function TaskModal({ isOpen, onClose, task, projectId, taskListId, onSuccess, orgRole }) {
   const { state, addTask, updateTask: updateTaskInState } = useKanban()
   const [title, setTitle] = useState("")
   const [description, setDescription] = useState("")
@@ -188,14 +188,27 @@ const ensureTaskList = async (projectId) => {
       if (typeof onSuccess === "function") onSuccess();
       if (typeof onClose === "function") onClose();
     } else {
-      // Create new task
-      const response = await createTaskWithList(taskData);
-      if (response.data) {
+
+      if(orgRole === "member"){
+        await createTaskRequest(taskData);
+        toast.info("Task request sent to admin for approval.");
+        if (typeof onSuccess === "function") onSuccess();
+        if (typeof onClose === "function") onClose();
+        return;
+
+      }else{
+        // Create new task
+        const response = await createTaskWithList(taskData);
+        if (response.data) {
         addTask(response.data);
         toast.success("Task created successfully");
         if (typeof onSuccess === "function") onSuccess();
         if (typeof onClose === "function") onClose();
       }
+
+      }
+      
+      
     }
   } catch (error) {
     const errorMessage = error.response?.data?.detail || error.message;

@@ -6,11 +6,12 @@ from django_filters.rest_framework import DjangoFilterBackend, FilterSet, CharFi
 from django.db import models
 from django.utils import timezone
 from datetime import timedelta
-from .models import Task, SubTask, TimeLog, Tag, TaskAttachment, Comment, ActivityLog
-from .serializers import TaskSerializer, SubTaskSerializer, TimeLogSerializer, CommentSerializer, TaskAttachmentSerializer, TagSerializer, ActivityLogSerializer
+from .models import Task, SubTask, TimeLog, Tag, TaskAttachment, Comment, ActivityLog, TaskRequest
+from .serializers import TaskSerializer, SubTaskSerializer, TimeLogSerializer, CommentSerializer, TaskAttachmentSerializer, TagSerializer, ActivityLogSerializer, TaskRequestSerializer
 from project.models import Project
 from django_filters import rest_framework as filters
 from django.core.exceptions import PermissionDenied
+from rest_framework.permissions import IsAuthenticated
 
 
 class TaskFilter(FilterSet):
@@ -261,3 +262,50 @@ class TaskAttachmentViewset(viewsets.ModelViewSet):
         serializer.save(task_id=self.kwargs['task_pk'],
             uploaded_by=self.request.user
             )
+        
+        
+
+
+class TaskRequestViewSet(viewsets.ModelViewSet):
+    queryset = TaskRequest.objects.all()
+    serializer_class = TaskRequestSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        return TaskRequest.objects.filter(project__roles__user=user) | TaskRequest.objects.filter(requested_by=user)
+
+    def perform_create(self, serializer):
+        serializer.save(requested_by=self.request.user)
+
+    @action(detail=True, methods=['post'])
+    def approve(self, request, pk=None):
+        request_obj = self.get_object()
+
+        # Check if user is admin
+        if not request_obj.project.roles.filter(user=request.user, role='admin').exists():
+            raise PermissionDenied("Only project admins can approve task requests.")
+
+        # Create actual Task
+        task = Task.objects.create(
+            title=request_obj.title,
+            description=request_obj.description,
+            project=request_obj.project,
+            task_list=request_obj.task_list,
+            created_by=request_obj.requested_by
+        )
+
+        request_obj.status = 'approved'
+        request_obj.save()
+        return Response({'status': 'approved', 'task_id': task.id})
+
+    @action(detail=True, methods=['post'])
+    def reject(self, request, pk=None):
+        request_obj = self.get_object()
+
+        if not request_obj.project.roles.filter(user=request.user, role='admin').exists():
+            raise PermissionDenied("Only project admins can reject task requests.")
+
+        request_obj.status = 'rejected'
+        request_obj.save()
+        return Response({'status': 'rejected'})

@@ -50,6 +50,7 @@ from . import views
 
 router = DefaultRouter()
 router.register(r'timelogs', views.TimeLogViewSet, basename='timelog')
+router.register(r'task-requests', views.TaskRequestViewSet, basename='task-request')
 
 urlpatterns = [
     path('', views.TaskListCreateView.as_view(), name='task-list'),
