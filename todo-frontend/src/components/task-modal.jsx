@@ -328,7 +328,7 @@ const ensureTaskList = async (projectId) => {
               <Popover open={showTimeLog} onOpenChange={setShowTimeLog} >
   <PopoverTrigger asChild>
     {task && task.id && (
-  <Button onClick={handleLogTime}>Log Time</Button>
+  <Button onClick={handleLogTime}>Log Time.</Button>
 )}
   </PopoverTrigger>
   <PopoverContent className="w-72 grid gap-2">
