@@ -1,7 +1,8 @@
 import React from 'react'
 import axios from 'axios'
 
-const baseURL = 'http://116.202.210.102:6970/api/'
+
+const baseURL = `${import.meta.env.VITE_BACKENDURL}api/`
 // const baseURL = 'https://3njncz1t-8000.inc1.devtunnels.ms/api/'
 
 
@@ -277,7 +278,7 @@ export const getalluser = async () =>{
 export const uploadChatAttachment = (projectId, formData) => {
   const access = localStorage.getItem('access_token');
   return axios.post(
-    `http://116.202.210.102:6970/api/project/${projectId}/chat/attachments/`,
+    `${import.meta.env.VITE_BACKENDURL}api/project/${projectId}/chat/attachments/`,
     formData,
     {
       headers: {

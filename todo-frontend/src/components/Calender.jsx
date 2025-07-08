@@ -319,8 +319,8 @@ const handleUpdateEvent = async () => {
                         
                         {/* Calendar Days */}
                         {eachDayOfInterval({
-                          start: startOfMonth(currentMonth),
-                          end: endOfMonth(currentMonth)
+                        start: startOfWeek(startOfMonth(currentMonth), { weekStartsOn: 0 }),
+                        end: endOfWeek(endOfMonth(currentMonth), { weekStartsOn: 0 })
                         }).map((date) => {
                           const dayEvents = getDayEvents(date);
                           const isToday = format(date, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd');

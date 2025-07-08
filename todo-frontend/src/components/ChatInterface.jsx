@@ -42,7 +42,7 @@ const ChatInterface = ({ projectId, currentUser, onClose }) => {
     const fetchChatRoom = async () => {
       try {
         setIsLoading(true);
-        const response = await fetch(`http://116.202.210.102:6970/api/project/${projectId}/chat-room/`, {
+        const response = await fetch(`${import.meta.env.VITE_BACKENDURL}/api/project/${projectId}/chat-room/`, {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
             'Content-Type': 'application/json',
@@ -85,7 +85,7 @@ const ChatInterface = ({ projectId, currentUser, onClose }) => {
   const fetchMessages = async () => {
     if (!projectId) return;
     try {
-      const response = await fetch(`http://116.202.210.102:6970/api/project/${projectId}/chat/messages/`, {
+      const response = await fetch(`${import.meta.env.VITE_BACKENDURL}/api/project/${projectId}/chat/messages/`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('access_token')}`
         }
