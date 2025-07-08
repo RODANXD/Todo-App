@@ -13,7 +13,7 @@ import { getTasksByProject } from "../api/AxiosAuth";
 import { updateTaskPriority } from "../api/AxiosAuth";
 import { toast } from "sonner"
 
-export default function KanbanBoard({ orgRole, projectId, taskListId }) {
+export default function KanbanBoard({ projectId, taskListId }) {
   const { state, moveTask, saveData, loadData, deleteColumn } = useKanban()
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false)
   const [isColumnModalOpen, setIsColumnModalOpen] = useState(false)
@@ -233,7 +233,7 @@ export default function KanbanBoard({ orgRole, projectId, taskListId }) {
         projectId={projectId}
         taskListId={taskListId} // Pass task list ID
         onSuccess = {refreshTasks}
-        orgRole={orgRole}
+        
       />
       <ColumnModal isOpen={isColumnModalOpen} onClose={closeColumnModal} column={editingColumn} />
     </div>

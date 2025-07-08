@@ -226,7 +226,8 @@ export const approveTaskRequest = (id) => axiosinstance.post(`/task-requests/${i
 export const rejectTaskRequest = (id) => axiosinstance.post(`/task-requests/${id}/reject/`);
 
 
-
+// timelog api
+export const timelogs = (data) => axiosinstance.post(`/tasks/timelogs/`, data);
 
 
 

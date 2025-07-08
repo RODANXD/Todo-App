@@ -118,8 +118,8 @@ export default function AnalyticsPage() {
   return (
     <div className="space-y-6 p-3">
       <div className="flex items-center flex-wrap justify-evenly">
-        <h1 className="text-3xl text-white font-bold tracking-tight">Analytics</h1>
-        <p className="text-muted-foreground">Track your productivity and project progress</p>
+        <h1 className="text-3xl text-slate-900/80 font-bold tracking-tight">Analytics</h1>
+        <p className="text-grey-800">Track your productivity and project progress</p>
         <Button onClick={() => navigate("/")}>Back to Dashboard</Button>  
       </div>
 

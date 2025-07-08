@@ -12,7 +12,7 @@ import { Input } from "../components/ui/input"
 import { Button } from "../components/ui/button"
 import { Textarea } from "../components/ui/textarea"
 import { createProject, deleteProject } from "../api/AxiosAuth"
-import TaskRequestsPanel from "../components/TaskReq"
+// import TaskRequestsPanel from "/components/TaskReq"
 import { MoreHorizontal, Plus, Users, Calendar, BarChart3, MessageSquare, LogOut, Filter, X, Search, Bell, Settings, Folder, Clock, Target, Menu } from "lucide-react"
 import { toast } from "sonner";
 import { Switch } from "../components/ui/switch"
@@ -721,7 +721,7 @@ const Dashboard = () => {
                         <CardDescription className="mt-1">{selectproject.description}</CardDescription>
                       )}
                     </div>
-                    {orgRole === "admin" && <TaskRequestsPanel projectId={selectproject?.id} />}
+                    {/* {orgRole === "admin" && <TaskRequestsPanel projectId={selectproject?.id} />} */}
                   </div>
                   {selectproject && (
                     <div className="flex items-center space-x-3">
@@ -870,7 +870,7 @@ const Dashboard = () => {
                 {selectproject && tasks.length > 0 ? (
                   <div className="bg-slate-50/30 rounded-xl p-4 border border-slate-200/50">
                     <KanbanProvider tasks={sortedTasks} filters={filters} sortBy={sortBy}>
-                      <KanbanBoard orgRole={orgRole} projectId={selectproject.id} taskListId={selectproject.task_lists?.[0]?.id} />
+                      <KanbanBoard projectId={selectproject.id} taskListId={selectproject.task_lists?.[0]?.id} />
                     </KanbanProvider>
                   </div>
                 ) : selectproject ? (

@@ -24,11 +24,12 @@ import { Calendar } from "../components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "../components/ui/popover"
 import { format } from "date-fns"
 import { createTask, updateTask, createTaskList, getTasksByProject } from "../api/AxiosAuth" // Import API functions
-import { createTaskWithList, getProjectMembers, createTaskRequest } from "../api/AxiosAuth";
+import { createTaskWithList, getProjectMembers, createTaskRequest, timelogs } from "../api/AxiosAuth";
+// import { STATUS_CODES } from "http"
 
 // import { updateTask } from "../api/AxiosAuth"
 
-export default function TaskModal({ isOpen, onClose, task, projectId, taskListId, onSuccess, orgRole }) {
+export default function TaskModal({ isOpen, onClose, task, projectId, taskListId, onSuccess, orgRole, taskid }) {
   const { state, addTask, updateTask: updateTaskInState } = useKanban()
   const [title, setTitle] = useState("")
   const [description, setDescription] = useState("")
@@ -43,6 +44,10 @@ export default function TaskModal({ isOpen, onClose, task, projectId, taskListId
   const [, setForceUpdate] = useState(0);
   const [allTasks, setAllTasks] = useState([])
   const [open, setOpen] = useState(false);
+  const [showTimeLog, setShowTimeLog] = useState(false);
+const [startTime, setStartTime] = useState("");
+const [endTime, setEndTime] = useState("");
+const [logLoading, setLogLoading] = useState(false);
 
   // console.log("project id-----------", projectId)
 
@@ -106,6 +111,37 @@ export default function TaskModal({ isOpen, onClose, task, projectId, taskListId
     if(isOpen) fetchAlltasks();
 
   },[isOpen,projectId,task])
+
+  const handleLogTime = async () => {
+  if (!startTime || !endTime) {
+    toast.warning("Please select both start and end time.");
+    return;
+  }
+  setLogLoading(true);
+  try {
+    if (!task || !task.id) {
+  toast.error("Task not available for logging time");
+  return;
+}
+    console.log("tasklist id",task.id)
+    await timelogs({
+      task: task.id , // use the current task's id
+      start_time: startTime,
+      end_time: endTime,
+    });
+    toast.success("Time log added!");
+    setShowTimeLog(false);
+    setStartTime("");
+    setEndTime("");
+  } catch (error) {
+    toast.error("Failed to log time.");
+    console.error(error)
+  } finally {
+    setLogLoading(false);
+  }
+};
+
+
 const ensureTaskList = async (projectId) => {
     try {
       if (!selectproject?.task_lists?.length) {
@@ -135,6 +171,10 @@ const ensureTaskList = async (projectId) => {
 
       return selectproject.task_lists[0].id
     } catch (error) {
+      if (error.response && error.response.status === 403) {
+        toast.error("Error ensuring task list: Only an admin can perform this action.");
+    throw new Error("Only an admin can perform this action.");
+      }
       console.error("Error ensuring task list:", error)
       throw new Error(`Failed to create task list: ${error.message}`)
     }
@@ -189,14 +229,14 @@ const ensureTaskList = async (projectId) => {
       if (typeof onClose === "function") onClose();
     } else {
 
-      if(orgRole === "member"){
-        await createTaskRequest(taskData);
-        toast.info("Task request sent to admin for approval.");
-        if (typeof onSuccess === "function") onSuccess();
-        if (typeof onClose === "function") onClose();
-        return;
+      // if(orgRole === "member"){
+      //   await createTaskRequest(taskData);
+      //   toast.info("Task request sent to admin for approval.");
+      //   if (typeof onSuccess === "function") onSuccess();
+      //   if (typeof onClose === "function") onClose();
+      //   return;
 
-      }else{
+      // }else{
         // Create new task
         const response = await createTaskWithList(taskData);
         if (response.data) {
@@ -204,7 +244,7 @@ const ensureTaskList = async (projectId) => {
         toast.success("Task created successfully");
         if (typeof onSuccess === "function") onSuccess();
         if (typeof onClose === "function") onClose();
-      }
+      // }
 
       }
       
@@ -285,7 +325,42 @@ const ensureTaskList = async (projectId) => {
                   <Calendar mode="single" selected={dueDate} onSelect={setDueDate} initialFocus />
                 </PopoverContent>
               </Popover>
+              <Popover open={showTimeLog} onOpenChange={setShowTimeLog} >
+  <PopoverTrigger asChild>
+    {task && task.id && (
+  <Button onClick={handleLogTime}>Log Time</Button>
+)}
+  </PopoverTrigger>
+  <PopoverContent className="w-72 grid gap-2">
+    <Label>Start Time</Label>
+    <Input
+    className="max-w-52 bg-[#E9DCC9] text-black"
+      type="datetime-local"
+      value={startTime}
+      onChange={(e) => setStartTime(e.target.value)}
+    />
+    <Label>End Time</Label>
+    <Input
+    className="max-w-52 bg-[#E9DCC9] text-black"
+
+      type="datetime-local"
+      value={endTime}
+      onChange={(e) => setEndTime(e.target.value)}
+    />
+    <Button
+    className="max-w-52"
+
+      onClick={handleLogTime}
+      disabled={logLoading}
+    >
+      {logLoading ? "Logging..." : "Save Log"}
+    </Button>
+  </PopoverContent>
+</Popover>
+
             </div>
+            
+            
             <div className="grid gap-2">
               <Label htmlFor="assignee">Assignee</Label>
                             <Input
