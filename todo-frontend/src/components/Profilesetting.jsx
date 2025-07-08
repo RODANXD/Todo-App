@@ -569,7 +569,7 @@ fetchprofile();
                                       src={
                                         typeof profileData.avatarPreview === "string" && profileData.avatarPreview.startsWith("blob:")
                                           ? profileData.avatarPreview
-                                          : `http://116.202.210.102:6970${profileData.avatarPreview}`
+                                          : `${import.meta.env.VITE_BACKENDURL}${profileData.avatarPreview}`
                                       }
                                       alt={`${profileData.firstName} ${profileData.lastName}`}
                                     />
